@@ -13,47 +13,47 @@
 #include <tbb/parallel_for.h>                   // for tbb::parallel_for
 
 namespace {
-    // �r���S�{�[�h�̃}�X��
+    // ビンゴボードのマス数
     static auto constexpr BOARDSIZE = 25U;
 
-    // �����e�J�����V�~�����[�V�����̎��s��
+    // モンテカルロシミュレーションの試行回数
     static auto constexpr MCMAX = 100000;
 
-    // �s�E��̑���
+    // 行・列の総数
     static auto constexpr ROWCOLUMNSIZE = 10U;
 
     //! A using.
     /*!
-        ���̃}�X�ɏ�����Ă���ԍ��ƁA���̃}�X�������������ǂ����������t���O
-        ��std::pair
+        そのマスに書かれてある番号と、そのマスが当たったかどうかを示すフラグ
+        のstd::pair
     */
     using mytype = std::pair<std::int32_t, bool>;
 
     //! A function.
     /*!
-        �r���S�{�[�h�𐶐�����
-        \return �r���S�{�[�h���i�[���ꂽ�ϒ��z��
+        ビンゴボードを生成する
+        \return ビンゴボードが格納された可変長配列
     */
     std::vector<mytype> makeBoard();
 
     //! A function.
     /*!
-        �����e�J�����E�V�~�����[�V�������s��
-        \return �����e�J�����@�̌��ʂ��i�[���ꂽ�񎟌��ϒ��z��
+        モンテカルロ・シミュレーションを行う
+        \return モンテカルロ法の結果が格納された二次元可変長配列
     */
     std::vector< std::vector<std::int32_t> > montecarlo();
 
     //! A function.
     /*!
-        �����e�J�����E�V�~�����[�V�����̎���
-        \return �����e�J�����@�̌��ʂ��i�[���ꂽ�ϒ��z��
+        モンテカルロ・シミュレーションの実装
+        \return モンテカルロ法の結果が格納された可変長配列
     */
     std::vector<std::int32_t> montecarloImpl();
 
     //! A function.
     /*!
-        �����e�J�����E�V�~�����[�V������TBB�ŕ��񉻂��čs��
-        \return �����e�J�����@�̌��ʂ��i�[���ꂽ�ϒ��z��
+        モンテカルロ・シミュレーションをTBBで並列化して行う
+        \return モンテカルロ法の結果が格納された可変長配列
     */
     tbb::concurrent_vector< std::vector<std::int32_t> > montecarloTBB();
 }
@@ -62,40 +62,40 @@ int main()
 {
     checkpoint::CheckPoint cp;
 
-    cp.checkpoint("�����J�n", __LINE__);
+    cp.checkpoint("処理開始", __LINE__);
     
-    // �����e�J�����E�V�~�����[�V�����̌��ʂ���
+    // モンテカルロ・シミュレーションの結果を代入
     auto const mcresult(montecarlo());
 
-    cp.checkpoint("���񉻖���", __LINE__);
+    cp.checkpoint("並列化無し", __LINE__);
     
-    // TBB�ŕ��񉻂��������e�J�����E�V�~�����[�V�����̌��ʂ���
+    // TBBで並列化したモンテカルロ・シミュレーションの結果を代入
     auto const mcresult2(montecarloTBB());
 
-    cp.checkpoint("���񉻗L��", __LINE__);
+    cp.checkpoint("並列化有り", __LINE__);
         
-    // �����e�J�����E�V�~�����[�V�����̕��ό��ʂ̂��߂̉ϒ��z��
+    // モンテカルロ・シミュレーションの平均結果のための可変長配列
     std::vector<double> avg(ROWCOLUMNSIZE);
 
-    // �s��̑������J��Ԃ�
+    // 行列の総数分繰り返す
     for (auto i = 0; i < ROWCOLUMNSIZE; i++) {
-        // ���a��0�ŏ�����
+        // 総和を0で初期化
         auto sum = 0;
 
-        // ���s�񐔕��J��Ԃ�
+        // 試行回数分繰り返す
         for (auto j = 0; j < MCMAX; j++) {
-            // j��ڂ̌��ʂ�������
+            // j回目の結果を加える
             sum += mcresult[j][i];
         }
 
-        // ���ς��Z�o����i�s��ڂ�avg�ɑ��
+        // 平均を算出してi行列目のavgに代入
         avg[i] = static_cast<double>(sum) / static_cast<double>(MCMAX);
     }
 
     for (auto i = 0; i < ROWCOLUMNSIZE; i++) {
         auto const efficiency = avg[i] / static_cast<double>(i + 1);
         std::cout <<
-            boost::format("%d�ڂɕK�v�ȕ��ω񐔁F %.1f��, ���� = %.1f�i��/�j\n")
+            boost::format("%d個目に必要な平均回数： %.1f回, 効率 = %.1f（回/個）\n")
             % (i + 1) % avg[i] % efficiency;
     }
 
@@ -107,139 +107,139 @@ int main()
 namespace {
     std::vector<mytype> makeBoard()
     {
-        // ���̃r���S�{�[�h�𐶐�
+        // 仮のビンゴボードを生成
         std::vector<std::int32_t> boardtmp(BOARDSIZE);
 
-        // ���̃r���S�{�[�h��1�`25�̐�������
+        // 仮のビンゴボードに1～25の数字を代入
         boost::algorithm::iota(boardtmp, 1);
 
-        // ���̃r���S�{�[�h�̐������V���b�t��
+        // 仮のビンゴボードの数字をシャッフル
         std::shuffle(boardtmp.begin(), boardtmp.end(), std::mt19937());
 
-        // �r���S�{�[�h�𐶐�
+        // ビンゴボードを生成
         std::vector<mytype> board(BOARDSIZE);
 
-        // ���̃r���S�{�[�h����r���S�{�[�h�𐶐�����
+        // 仮のビンゴボードからビンゴボードを生成する
         boost::transform(
             boardtmp,
             board.begin(),
             [](auto n) { return std::make_pair(n, false); });
 
-        // �r���S�{�[�h��Ԃ�
+        // ビンゴボードを返す
         return board;
     }
 
     std::vector< std::vector<std::int32_t> > montecarlo()
     {
-        // �����e�J�����E�V�~�����[�V�����̌��ʂ��i�[���邽�߂̓񎟌��ϒ��z��
+        // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
         std::vector< std::vector<std::int32_t> > mcresult;
 
-        // MCMAX�̗e�ʂ��m��
+        // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
 
-        // ���s�񐔕��J��Ԃ�
+        // 試行回数分繰り返す
         for (auto i = 0; i < MCMAX; i++) {
-            // �����e�J�����E�V�~�����[�V�����̌��ʂ���
+            // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl());
         }
 
-        // �����e�J�����E�V�~�����[�V�����̌��ʂ�Ԃ�
+        // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
     }
 
     std::vector<std::int32_t> montecarloImpl()
     {
-        // �r���S�{�[�h�𐶐�
+        // ビンゴボードを生成
         auto board(makeBoard());
 
-        // ���에���N���X��������
+        // 自作乱数クラスを初期化
         myrandom::MyRand mr(1, BOARDSIZE);
 
-        // ���̍s�E�񂪊��ɖ��܂��Ă��邩�ǂ������i�[����ϒ��z��
-        // ROWCOLUMNSIZE�̗v�f��false�ŏ�����
+        // その行・列が既に埋まっているかどうかを格納する可変長配列
+        // ROWCOLUMNSIZE個の要素をfalseで初期化
         std::vector<bool> rcfill(ROWCOLUMNSIZE, false);
 
-        // �s�E�񂪖��܂�܂łɗv�����񐔂��i�[�����ϒ��z��
+        // 行・列が埋まるまでに要した回数を格納した可変長配列
         std::vector<std::int32_t> fillnum;
 
-        // ROWCOLUMNSIZE�̗e�ʂ��m��
+        // ROWCOLUMNSIZE個の容量を確保
         fillnum.reserve(ROWCOLUMNSIZE);
 
-        // �������[�v
+        // 無限ループ
         for (auto i = 0; true; i++) {
-            // �����œ��������ŁA���܂��������ĂȂ��}�X������
+            // 乱数で得た数字で、かつまだ当たってないマスを検索
             auto itr = boost::find(board, std::make_pair(mr.myrand(), false));
 
-            // ���̂悤�ȃ}�X��������
+            // そのようなマスがあった
             if (itr != board.end()) {
-                // ���̃}�X�͓��������Ƃ��A�t���O��true�ɂ���
+                // そのマスは当たったとし、フラグをtrueにする
                 itr->second = true;
             }
-            // ���̂悤�ȃ}�X���Ȃ�����
+            // そのようなマスがなかった
             else {
-                //���[�v���s
+                //ループ続行
                 continue;
             }
 
-            // �e�s�E�񂪖��܂������ǂ������`�F�b�N
+            // 各行・列が埋まったかどうかをチェック
             for (auto j = 0; j < 5; j++) {
-                // �s���`�F�b�N
+                // 行をチェック
                 if (board[5 * j].second &&
                     board[5 * j + 1].second &&
                     board[5 * j + 2].second &&
                     board[5 * j + 3].second &&
                     board[5 * j + 4].second &&
-                    // ���̍s�͊��ɖ��܂��Ă��邩�ǂ���
+                    // その行は既に埋まっているかどうか
                     !rcfill[j]) {
-                    // ���̍s�͖��܂����Ƃ��āA�t���O��true�ɂ���
+                    // その行は埋まったとして、フラグをtrueにする
                     rcfill[j] = true;
-                    // �v�������s�񐔂��i�[
+                    // 要した試行回数を格納
                     fillnum.push_back(i);
                 }
 
-                // ����`�F�b�N
+                // 列をチェック
                 if (board[j].second &&
                     board[j + 5].second &&
                     board[j + 10].second &&
                     board[j + 15].second &&
                     board[j + 20].second &&
-                    // ���̗�͊��ɖ��܂��Ă��邩�ǂ���
+                    // その列は既に埋まっているかどうか
                     !rcfill[j + 5]) {
-                    // ���̗�͖��܂����Ƃ��āA�t���O��true�ɂ���
+                    // その列は埋まったとして、フラグをtrueにする
                     rcfill[j + 5] = true;
-                    // �v�������s�񐔂��i�[
+                    // 要した試行回数を格納
                     fillnum.push_back(i);
                 }
             }
 
-            // �S�Ă̍s�E�񂪖��܂������ǂ���
+            // 全ての行・列が埋まったかどうか
             if (fillnum.size() == ROWCOLUMNSIZE) {
-                // ���܂����̂Ń��[�v�E�o
+                // 埋まったのでループ脱出
                 break;
             }
         }
 
-        // �v�������s�֐��̉ϒ��z���Ԃ�
+        // 要した試行関数の可変長配列を返す
         return fillnum;
     }
 
     tbb::concurrent_vector< std::vector<std::int32_t> > montecarloTBB()
     {
-        // �����e�J�����E�V�~�����[�V�����̌��ʂ��i�[���邽�߂̓񎟌��ϒ��z��
-        // ��̃X���b�h�������ɃA�N�Z�X����\�������邽��tbb::concurrent_vector���g��
+        // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
+        // 二つのスレッドが同時にアクセスする可能性があるためtbb::concurrent_vectorを使う
         tbb::concurrent_vector< std::vector<std::int32_t> > mcresult;
 
-        // MCMAX�̗e�ʂ��m��
+        // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
 
-        // MCMAX��̃��[�v����񉻂��Ď��s
+        // MCMAX回のループを並列化して実行
         tbb::parallel_for(
             0,
             MCMAX,
             1,
             [&mcresult](auto n) { mcresult.push_back(montecarloImpl()); });
 
-        // �����e�J�����E�V�~�����[�V�����̌��ʂ�Ԃ�
+        // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
     }
 }
