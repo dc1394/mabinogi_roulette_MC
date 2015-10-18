@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mabinogi_roulette_MC.cpp" />
+    <ClCompile Include="..\src\mabinogi_roulette_MC\mabinogi_roulette_MC.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="myrandom\myrand.h" />
+    <ClInclude Include="..\src\mabinogi_roulette_MC\myrandom\myrand.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D316E3C4-3646-401A-AB28-9A00AD7886AB}</ProjectGuid>
@@ -110,11 +110,14 @@
       <Parallelization>true</Parallelization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Cpp0xSupport>true</Cpp0xSupport>
+      <AdditionalIncludeDirectories>D:\DATA\PROGRAM\C++\mabinogi_roulette_MC\src\checkpoint;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>D:\DATA\PROGRAM\C++\mabinogi_roulette_MC\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>checkpoint.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
