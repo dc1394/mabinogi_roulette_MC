@@ -22,40 +22,46 @@ namespace {
     // 行・列の総数
     static auto constexpr ROWCOLUMNSIZE = 10U;
 
-    //! A using.
+    //! A typedef.
     /*!
         そのマスに書かれてある番号と、そのマスが当たったかどうかを示すフラグ
         のstd::pair
     */
-    using mytype = std::pair<std::int32_t, bool>;
+    using mypair = std::pair<std::int32_t, bool>;
+
+    //! A typedef.
+    /*!
+        行・列が埋まるまでに要した回数と、その時点で埋まったマスのstd::pair
+    */
+    using mypair2 = std::pair<std::int32_t, std::int32_t>;
 
     //! A function.
     /*!
         ビンゴボードを生成する
         \return ビンゴボードが格納された可変長配列
     */
-    std::vector<mytype> makeBoard();
+    std::vector<mypair> makeBoard();
 
     //! A function.
     /*!
         モンテカルロ・シミュレーションを行う
         \return モンテカルロ法の結果が格納された二次元可変長配列
     */
-    std::vector< std::vector<std::int32_t> > montecarlo();
+    std::vector< std::vector<mypair2> > montecarlo();
 
     //! A function.
     /*!
         モンテカルロ・シミュレーションの実装
         \return モンテカルロ法の結果が格納された可変長配列
     */
-    std::vector<std::int32_t> montecarloImpl();
+    std::vector<mypair2> montecarloImpl();
 
     //! A function.
     /*!
         モンテカルロ・シミュレーションをTBBで並列化して行う
         \return モンテカルロ法の結果が格納された可変長配列
     */
-    tbb::concurrent_vector< std::vector<std::int32_t> > montecarloTBB();
+    tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB();
 }
 
 int main()
@@ -67,36 +73,44 @@ int main()
     // モンテカルロ・シミュレーションの結果を代入
     auto const mcresult(montecarlo());
 
-    cp.checkpoint("並列化無し", __LINE__);
+    cp.checkpoint("並列化無効", __LINE__);
     
     // TBBで並列化したモンテカルロ・シミュレーションの結果を代入
     auto const mcresult2(montecarloTBB());
 
-    cp.checkpoint("並列化有り", __LINE__);
+    cp.checkpoint("並列化有効", __LINE__);
         
-    // モンテカルロ・シミュレーションの平均結果のための可変長配列
-    std::vector<double> avg(ROWCOLUMNSIZE);
+    // モンテカルロ・シミュレーションの平均試行回数の結果を格納した可変長配列
+    std::vector<double> trialavg(ROWCOLUMNSIZE);
 
-    // 行列の総数分繰り返す
-    for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
+    // モンテカルロ・シミュレーションのi回目の試行で、埋まっているマスの数を格納した可変長配列
+    std::vector<double> fillavg(ROWCOLUMNSIZE);
+
+    // 行・列の総数分繰り返す
+    for (auto i = 0; i < ROWCOLUMNSIZE; i++) {
         // 総和を0で初期化
-        auto sum = 0;
+        auto trialsum = 0;
+        auto fillsum = 0;
 
         // 試行回数分繰り返す
         for (auto j = 0; j < MCMAX; j++) {
             // j回目の結果を加える
-            sum += mcresult[j][i];
+            trialsum += mcresult[j][i].first;
+            fillsum += mcresult[j][i].second;
         }
 
-        // 平均を算出してi行列目のavgに代入
-        avg[i] = static_cast<double>(sum) / static_cast<double>(MCMAX);
+        // 平均を算出してi行・列目のtrialavg、fillavgに代入
+        trialavg[i] = static_cast<double>(trialsum) / static_cast<double>(MCMAX);
+        fillavg[i] = static_cast<double>(fillsum) / static_cast<double>(MCMAX);
     }
 
     for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
-        auto const efficiency = avg[i] / static_cast<double>(i + 1);
-        std::cout <<
-            boost::format("%d個目に必要な平均試行回数： %.1f回, 効率 = %.1f（回/個）\n")
-            % (i + 1) % avg[i] % efficiency;
+        auto const efficiency = trialavg[i] / static_cast<double>(i + 1);
+        std::cout
+            << boost::format("%d個目に必要な平均試行回数： %.1f回, 効率 = %.1f（回/個）, ")
+            % (i + 1) % trialavg[i] % efficiency
+            << boost::format("埋まっているマスの平均個数： %.1f個\n")
+            % fillavg[i];
     }
 
     cp.checkpoint_print();
@@ -105,7 +119,7 @@ int main()
 }
 
 namespace {
-    std::vector<mytype> makeBoard()
+    std::vector<mypair> makeBoard()
     {
         // 仮のビンゴボードを生成
         std::vector<std::int32_t> boardtmp(BOARDSIZE);
@@ -117,7 +131,7 @@ namespace {
         std::shuffle(boardtmp.begin(), boardtmp.end(), std::mt19937());
 
         // ビンゴボードを生成
-        std::vector<mytype> board(BOARDSIZE);
+        std::vector<mypair> board(BOARDSIZE);
 
         // 仮のビンゴボードからビンゴボードを生成する
         boost::transform(
@@ -129,10 +143,10 @@ namespace {
         return board;
     }
 
-    std::vector< std::vector<std::int32_t> > montecarlo()
+    std::vector< std::vector<mypair2> > montecarlo()
     {
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
-        std::vector< std::vector<std::int32_t> > mcresult;
+        std::vector< std::vector<mypair2> > mcresult;
 
         // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
@@ -147,7 +161,7 @@ namespace {
         return mcresult;
     }
 
-    std::vector<std::int32_t> montecarloImpl()
+    std::vector<mypair2> montecarloImpl()
     {
         // ビンゴボードを生成
         auto board(makeBoard());
@@ -159,11 +173,25 @@ namespace {
         // ROWCOLUMNSIZE個の要素をfalseで初期化
         std::vector<bool> rcfill(ROWCOLUMNSIZE, false);
 
-        // 行・列が埋まるまでに要した回数を格納した可変長配列
-        std::vector<std::int32_t> fillnum;
+        // 行・列が埋まるまでに要した回数と、その時点で埋まったマスを格納した
+        // 可変長配列
+        std::vector< mypair2 > fillnum;
 
         // ROWCOLUMNSIZE個の容量を確保
         fillnum.reserve(ROWCOLUMNSIZE);
+
+        // その時点で埋まっているマスを計算するためのラムダ式
+        auto const sum = [](const std::vector< mypair > & vec)
+        {
+            auto cnt = 0;
+            for (auto & e : vec) {
+                if (e.second) {
+                    cnt++;
+                }
+            }
+
+            return cnt;
+        };
 
         // 無限ループ
         for (auto i = 1; true; i++) {
@@ -191,10 +219,12 @@ namespace {
                     board[5 * j + 4].second &&
                     // その行は既に埋まっているかどうか
                     !rcfill[j]) {
+
                     // その行は埋まったとして、フラグをtrueにする
                     rcfill[j] = true;
-                    // 要した試行回数を格納
-                    fillnum.push_back(i);
+                    
+                    // 要した試行回数と、その時点で埋まったマスの数を格納
+                    fillnum.push_back(std::make_pair(i, sum(board)));
                 }
 
                 // 列をチェック
@@ -205,10 +235,12 @@ namespace {
                     board[j + 20].second &&
                     // その列は既に埋まっているかどうか
                     !rcfill[j + 5]) {
+
                     // その列は埋まったとして、フラグをtrueにする
                     rcfill[j + 5] = true;
-                    // 要した試行回数を格納
-                    fillnum.push_back(i);
+                    
+                    // 要した試行回数と、その時点で埋まったマスの数を格納
+                    fillnum.push_back(std::make_pair(i, sum(board)));
                 }
             }
 
@@ -223,11 +255,11 @@ namespace {
         return fillnum;
     }
 
-    tbb::concurrent_vector< std::vector<std::int32_t> > montecarloTBB()
+    tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB()
     {
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
         // 二つのスレッドが同時にアクセスする可能性があるためtbb::concurrent_vectorを使う
-        tbb::concurrent_vector< std::vector<std::int32_t> > mcresult;
+        tbb::concurrent_vector< std::vector<mypair2> > mcresult;
 
         // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
