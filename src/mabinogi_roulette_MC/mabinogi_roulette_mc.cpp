@@ -107,9 +107,9 @@ int main()
     for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
         auto const efficiency = trialavg[i] / static_cast<double>(i + 1);
         std::cout
-            << boost::format("%d個目に必要な平均試行回数： %.1f回, 効率 = %.1f（回/個）, ")
+            << boost::format("%d個目に必要な平均試行回数：%.1f回, 効率 = %.1f（回/個）, ")
             % (i + 1) % trialavg[i] % efficiency
-            << boost::format("埋まっているマスの平均個数： %.1f個\n")
+            << boost::format("埋まっているマスの平均個数：%.1f個\n")
             % fillavg[i];
     }
 
