@@ -17,7 +17,7 @@ namespace {
     static auto constexpr BOARDSIZE = 25U;
 
     // モンテカルロシミュレーションの試行回数
-    static auto constexpr MCMAX = 100000;
+    static auto constexpr MCMAX = 1000000;
 
     // 行・列の総数
     static auto constexpr ROWCOLUMNSIZE = 10U;
@@ -87,7 +87,7 @@ int main()
     std::vector<double> fillavg(ROWCOLUMNSIZE);
 
     // 行・列の総数分繰り返す
-    for (auto i = 0; i < ROWCOLUMNSIZE; i++) {
+    for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
         // 総和を0で初期化
         auto trialsum = 0;
         auto fillsum = 0;
