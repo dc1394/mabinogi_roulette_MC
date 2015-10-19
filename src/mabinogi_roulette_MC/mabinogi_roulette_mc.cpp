@@ -194,7 +194,7 @@ namespace {
         };
 
         // 無限ループ
-        for (auto i = 1; true; i++) {
+        for (auto i = 1; ; i++) {
             // 乱数で得た数字で、かつまだ当たってないマスを検索
             auto itr = boost::find(board, std::make_pair(mr.myrand(), false));
 
