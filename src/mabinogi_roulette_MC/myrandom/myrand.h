@@ -1,4 +1,4 @@
-/*! \file myrand.h
+﻿/*! \file myrand.h
     \brief 自作乱数クラスの宣言
 
     Copyright © 2015 @dc1394 All Rights Reserved.

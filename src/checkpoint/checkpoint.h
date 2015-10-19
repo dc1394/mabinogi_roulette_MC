@@ -1,4 +1,4 @@
-/*! \file checkpoint.h
+﻿/*! \file checkpoint.h
     \brief 時間計測のためのクラスの宣言
 
     Copyright ©  2014 @dc1394 All Rights Reserved.
