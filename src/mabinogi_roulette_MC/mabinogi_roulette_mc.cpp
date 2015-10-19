@@ -17,7 +17,7 @@ namespace {
     static auto constexpr BOARDSIZE = 25U;
 
     // モンテカルロシミュレーションの試行回数
-    static auto constexpr MCMAX = 1000000;
+    static auto constexpr MCMAX = 1000000U;
 
     // 行・列の総数
     static auto constexpr ROWCOLUMNSIZE = 10U;
@@ -93,7 +93,7 @@ int main()
         auto fillsum = 0;
 
         // 試行回数分繰り返す
-        for (auto j = 0; j < MCMAX; j++) {
+        for (auto j = 0U; j < MCMAX; j++) {
             // j回目の結果を加える
             trialsum += mcresult[j][i].first;
             fillsum += mcresult[j][i].second;
@@ -152,7 +152,7 @@ namespace {
         mcresult.reserve(MCMAX);
 
         // 試行回数分繰り返す
-        for (auto i = 0; i < MCMAX; i++) {
+        for (auto i = 0U; i < MCMAX; i++) {
             // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl());
         }
@@ -258,7 +258,7 @@ namespace {
     tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB()
     {
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
-        // 二つのスレッドが同時にアクセスする可能性があるためtbb::concurrent_vectorを使う
+        // 複数のスレッドが同時にアクセスする可能性があるためtbb::concurrent_vectorを使う
         tbb::concurrent_vector< std::vector<mypair2> > mcresult;
 
         // MCMAX個の容量を確保
@@ -266,9 +266,9 @@ namespace {
 
         // MCMAX回のループを並列化して実行
         tbb::parallel_for(
-            0,
+            std::uint32_t(0),
             MCMAX,
-            1,
+            std::uint32_t(1),
             [&mcresult](auto) { mcresult.push_back(montecarloImpl()); });
 
         // モンテカルロ・シミュレーションの結果を返す
