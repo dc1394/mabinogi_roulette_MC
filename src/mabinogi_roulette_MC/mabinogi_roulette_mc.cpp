@@ -40,7 +40,7 @@ namespace {
         ビンゴボードを生成する
         \return ビンゴボードが格納された可変長配列
     */
-    std::vector<mypair> makeBoard();
+    auto makeBoard();
 
     //! A function.
     /*!
@@ -119,7 +119,7 @@ int main()
 }
 
 namespace {
-    std::vector<mypair> makeBoard()
+    auto makeBoard()
     {
         // 仮のビンゴボードを生成
         std::vector<std::int32_t> boardtmp(BOARDSIZE);
