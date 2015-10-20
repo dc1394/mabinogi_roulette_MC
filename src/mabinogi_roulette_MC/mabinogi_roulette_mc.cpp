@@ -181,7 +181,7 @@ namespace {
         fillnum.reserve(ROWCOLUMNSIZE);
 
         // その時点で埋まっているマスを計算するためのラムダ式
-        auto const sum = [](const std::vector< mypair > & vec)
+        auto const sum = [](auto const & vec)
         {
             auto cnt = 0;
             for (auto & e : vec) {
