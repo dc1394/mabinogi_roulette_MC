@@ -2,25 +2,49 @@
 #include "myrandom/myrand.h"
 #include <algorithm>                            // for std::shuffle
 #include <cstdint>                              // for std::int32_t
+#include <cmath>                                // for std::sqrt
 #include <iostream>                             // for std::cout
 #include <random>                               // for std::mt19937
+#include <unordered_map>                        // for std::unordered_map
 #include <utility>                              // for std::make_pair
 #include <vector>                               // for std::vector
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
 #include <boost/format.hpp>                     // for boost::format
-#include <boost/range/algorithm.hpp>            // for boost::find, boost::transform
+#include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::transform
+#include <boost/range/numeric.hpp>              // for boost::accumulate
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
 #include <tbb/parallel_for.h>                   // for tbb::parallel_for
 
 namespace {
-    // ビンゴボードのマス数
-    static auto constexpr BOARDSIZE = 25U;
+    //! A global variable (constant expression).
+    /*!
+        列のサイズ
+    */
+    static auto constexpr COLUMN = 5U;
 
-    // モンテカルロシミュレーションの試行回数
+    //! A global variable (constant expression).
+    /*!
+        行のサイズ
+    */
+    static auto constexpr ROW = 5U;
+
+    //! A global variable (constant expression).
+    /*!
+        ビンゴボードのマス数
+    */
+    static auto constexpr BOARDSIZE = ROW * COLUMN;
+
+    //! A global variable (constant expression).
+    /*!
+        モンテカルロシミュレーションの試行回数
+    */
     static auto constexpr MCMAX = 1000000U;
 
-    // 行・列の総数
-    static auto constexpr ROWCOLUMNSIZE = 10U;
+    //! A global variable (constant expression).
+    /*!
+        行・列の総数
+    */
+    static auto constexpr ROWCOLUMN = ROW + COLUMN;
 
     //! A typedef.
     /*!
@@ -37,6 +61,31 @@ namespace {
 
     //! A function.
     /*!
+        10個目の行・列が埋まったときの中央値を求める
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの中央値
+    */
+    std::int32_t eval_median(std::vector< std::vector<mypair2> > const & mcresult);
+
+    //! A function.
+    /*!
+        10個目の行・列が埋まったときの最頻値を求める
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの最頻値
+    */
+    std::int32_t eval_mode(std::vector< std::vector<mypair2> > const & mcresult);
+
+    //! A function.
+    /*!
+        10個目の行・列が埋まったときの最頻値を求める
+        \param avgten 10個目の行・列が埋まったときの平均試行回数
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの標準偏差
+    */
+    double eval_std_deviation(double avgten, std::vector< std::vector<mypair2> > const & mcresult);
+
+    //! A function.
+    /*!
         ビンゴボードを生成する
         \return ビンゴボードが格納された可変長配列
     */
@@ -45,7 +94,7 @@ namespace {
     //! A function.
     /*!
         モンテカルロ・シミュレーションを行う
-        \return モンテカルロ法の結果が格納された二次元可変長配列
+        \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     std::vector< std::vector<mypair2> > montecarlo();
 
@@ -59,7 +108,7 @@ namespace {
     //! A function.
     /*!
         モンテカルロ・シミュレーションをTBBで並列化して行う
-        \return モンテカルロ法の結果が格納された可変長配列
+        \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB();
 }
@@ -81,13 +130,13 @@ int main()
     cp.checkpoint("並列化有効", __LINE__);
         
     // モンテカルロ・シミュレーションの平均試行回数の結果を格納した可変長配列
-    std::vector<double> trialavg(ROWCOLUMNSIZE);
+    std::vector<double> trialavg(ROWCOLUMN);
 
     // モンテカルロ・シミュレーションのi回目の試行で、埋まっているマスの数を格納した可変長配列
-    std::vector<double> fillavg(ROWCOLUMNSIZE);
+    std::vector<double> fillavg(ROWCOLUMN);
 
     // 行・列の総数分繰り返す
-    for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
+    for (auto i = 0U; i < ROWCOLUMN; i++) {
         // 総和を0で初期化
         auto trialsum = 0;
         auto fillsum = 0;
@@ -104,14 +153,22 @@ int main()
         fillavg[i] = static_cast<double>(fillsum) / static_cast<double>(MCMAX);
     }
 
-    for (auto i = 0U; i < ROWCOLUMNSIZE; i++) {
+    for (auto i = 0U; i < ROWCOLUMN; i++) {
         auto const efficiency = trialavg[i] / static_cast<double>(i + 1);
         std::cout
-            << boost::format("%d個目に必要な平均試行回数：%.1f回, 効率 = %.1f（回/個）, ")
+            << boost::format("%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
             % (i + 1) % trialavg[i] % efficiency
             << boost::format("埋まっているマスの平均個数：%.1f個\n")
             % fillavg[i];
     }
+
+    std::cout <<
+        boost::format("10個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
+            % eval_median(mcresult)
+            % eval_mode(mcresult)
+            % eval_std_deviation(trialavg[ROWCOLUMN - 1], mcresult) << std::endl;
+
+    cp.checkpoint("それ以外の処理", __LINE__);
 
     cp.checkpoint_print();
 
@@ -119,6 +176,63 @@ int main()
 }
 
 namespace {
+    std::int32_t eval_median(std::vector< std::vector<mypair2> > const & mcresult)
+    {
+        std::vector<std::int32_t> medtmp(MCMAX);
+
+        boost::transform(
+            mcresult,
+            medtmp.begin(),
+            [](auto const & res) { return res[ROWCOLUMN - 1].first; });
+
+        boost::sort(medtmp);
+
+        if (MCMAX % 2) {
+            return medtmp[(MCMAX - 1) / 2];
+        }
+        else {
+            return (medtmp[(MCMAX / 2) - 1] + medtmp[MCMAX / 2]) / 2;
+        }
+    }
+
+    std::int32_t eval_mode(std::vector< std::vector<mypair2> > const & mcresult)
+    {
+        std::unordered_map<std::int32_t, std::int32_t> modetmp;
+
+        boost::for_each(
+            mcresult,
+            [&modetmp](auto const & res) {
+                auto const val = res[ROWCOLUMN - 1].first;
+                if (modetmp.find(val) == modetmp.end()) {
+                    modetmp.emplace(val, 1);
+                }
+                else {
+                    modetmp[val]++;
+                }
+        });
+
+        auto const res = boost::max_element(
+            modetmp,
+            [](auto const & p1, auto const & p2) { return p1.second < p2.second; });
+
+        return res->first;
+    }
+
+    double eval_std_deviation(double avgten, std::vector< std::vector<mypair2> > const & mcresult)
+    {
+        std::vector<double> devtmp(MCMAX);
+
+        boost::transform(
+            mcresult,
+            devtmp.begin(),
+            [avgten](auto const & res) {
+                auto const val = static_cast<double>(res[ROWCOLUMN - 1].first);
+                return (val - avgten) * (val - avgten);
+        });
+
+        return std::sqrt(boost::accumulate(devtmp, 0.0) / static_cast<double>(MCMAX));
+    }
+
     auto makeBoard()
     {
         // 仮のビンゴボードを生成
@@ -170,19 +284,18 @@ namespace {
         myrandom::MyRand mr(1, BOARDSIZE);
 
         // その行・列が既に埋まっているかどうかを格納する可変長配列
-        // ROWCOLUMNSIZE個の要素をfalseで初期化
-        std::vector<bool> rcfill(ROWCOLUMNSIZE, false);
+        // ROWCOLUMN個の要素をfalseで初期化
+        std::vector<bool> rcfill(ROWCOLUMN, false);
 
         // 行・列が埋まるまでに要した回数と、その時点で埋まったマスを格納した
         // 可変長配列
-        std::vector< mypair2 > fillnum;
+        std::vector<mypair2> fillnum;
 
-        // ROWCOLUMNSIZE個の容量を確保
-        fillnum.reserve(ROWCOLUMNSIZE);
+        // ROWCOLUMN個の容量を確保
+        fillnum.reserve(ROWCOLUMN);
 
         // その時点で埋まっているマスを計算するためのラムダ式
-        auto const sum = [](auto const & vec)
-        {
+        auto const sum = [](auto const & vec) {
             auto cnt = 0;
             for (auto & e : vec) {
                 if (e.second) {
@@ -210,42 +323,49 @@ namespace {
             }
 
             // 各行・列が埋まったかどうかをチェック
-            for (auto j = 0; j < 5; j++) {
-                // 行をチェック
-                if (board[5 * j].second &&
-                    board[5 * j + 1].second &&
-                    board[5 * j + 2].second &&
-                    board[5 * j + 3].second &&
-                    board[5 * j + 4].second &&
+            for (auto j = 0U; j < ROW; j++) {
+                // 各行が埋まったかどうかのフラグ
+                auto rowflag = true;
+
+                // 各行が埋まったかどうかをチェック
+                for (auto k = 0U; k < COLUMN; k++) {
+                    rowflag &= board[COLUMN * j + k].second;
+                }
+
+                // 行の処理
+                if (rowflag &&
                     // その行は既に埋まっているかどうか
                     !rcfill[j]) {
-
                     // その行は埋まったとして、フラグをtrueにする
                     rcfill[j] = true;
-                    
+
                     // 要した試行回数と、その時点で埋まったマスの数を格納
                     fillnum.push_back(std::make_pair(i, sum(board)));
                 }
 
-                // 列をチェック
-                if (board[j].second &&
-                    board[j + 5].second &&
-                    board[j + 10].second &&
-                    board[j + 15].second &&
-                    board[j + 20].second &&
+                // 各列が埋まったかどうかのフラグ
+                auto columnflag = true;
+
+                // 各列が埋まったかどうかをチェック    
+                for (auto k = 0U; k < ROW; k++) {
+                    columnflag &= board[j + COLUMN * k].second;
+                }
+
+                // 列の処理
+                if (columnflag &&
                     // その列は既に埋まっているかどうか
-                    !rcfill[j + 5]) {
+                    !rcfill[j + ROW]) {
 
                     // その列は埋まったとして、フラグをtrueにする
-                    rcfill[j + 5] = true;
-                    
+                    rcfill[j + ROW] = true;
+
                     // 要した試行回数と、その時点で埋まったマスの数を格納
                     fillnum.push_back(std::make_pair(i, sum(board)));
                 }
             }
 
             // 全ての行・列が埋まったかどうか
-            if (fillnum.size() == ROWCOLUMNSIZE) {
+            if (fillnum.size() == ROWCOLUMN) {
                 // 埋まったのでループ脱出
                 break;
             }
