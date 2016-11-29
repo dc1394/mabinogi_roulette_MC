@@ -8,13 +8,9 @@ This software is released under the BSD 2-Clause License.
 #include "../checkpoint/checkpoint.h"
 #include <algorithm>                            // for std::shuffle
 #include <cstdint>                              // for std::int32_t
-#include <cstdlib>                              // for EXIT_SUCCESS, std::srand
-#include <ctime>                                // for std::ctime
 #include <cmath>                                // for std::sqrt
 #include <iostream>                             // for std::cout
 #include <map>                                  // for std::map
-#include <memory>                               
-#include <mutex>                                // for std::mutex
 #include <tuple>                                // for std::tuple
 #include <utility>                              // for std::make_pair
 #include <vector>                               // for std::vector
@@ -28,105 +24,104 @@ This software is released under the BSD 2-Clause License.
 namespace {
     //! A global variable (constant expression).
     /*!
-    列のサイズ
+        列のサイズ
     */
     static auto constexpr COLUMN = 5U;
 
     //! A global variable (constant expression).
     /*!
-    行のサイズ
+        行のサイズ
     */
     static auto constexpr ROW = 5U;
 
     //! A global variable (constant expression).
     /*!
-    ビンゴボードのマス数
+        ビンゴボードのマス数
     */
     static auto constexpr BOARDSIZE = ROW * COLUMN;
 
     //! A global variable (constant expression).
     /*!
-    モンテカルロシミュレーションの試行回数
+        モンテカルロシミュレーションの試行回数
     */
     static auto constexpr MCMAX = 1000000U;
 
     //! A global variable (constant expression).
     /*!
-    行・列の総数
+        行・列の総数
     */
     static auto constexpr ROWCOLUMN = ROW + COLUMN;
 
     //! A typedef.
     /*!
-    そのマスに書かれてある番号と、そのマスが当たったかどうかを示すフラグのstd::pair
+        そのマスに書かれてある番号と、そのマスが当たったかどうかを示すフラグのstd::pair
     */
     using mypair = std::pair<std::int32_t, bool>;
 
     //! A typedef.
     /*!
-    行・列が埋まるまでに要した回数と、その時点で埋まったマスのstd::pair
+        行・列が埋まるまでに要した回数と、その時点で埋まったマスのstd::pair
     */
     using mypair2 = std::pair<std::int32_t, std::int32_t>;
 
     //! A function.
     /*!
-    n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数を求める
-    \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-    \return n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
+        n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数を求める
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
     */
     std::pair< std::vector<double>, std::vector<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
-    10個目の行・列が埋まったときの中央値を求める
-    \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-    \return 10個目の行・列が埋まったときの中央値
+        10個目の行・列が埋まったときの中央値を求める
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの中央値
     */
     std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
-    10個目の行・列が埋まったときの最頻値と分布を求める
-    \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-    \return 10個目の行・列が埋まったときの最頻値と分布のstd::pair
+        10個目の行・列が埋まったときの最頻値と分布を求める
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの最頻値と分布のstd::pair
     */
     std::pair<double, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
-    10個目の行・列が埋まったときの標準偏差を求める
-    \param avgten 10個目の行・列が埋まったときの平均試行回数
-    \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-    \return 10個目の行・列が埋まったときの標準偏差
+        10個目の行・列が埋まったときの標準偏差を求める
+        \param avgten 10個目の行・列が埋まったときの平均試行回数
+        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return 10個目の行・列が埋まったときの標準偏差
     */
     double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
-    ビンゴボードを生成する
-    \return ビンゴボードが格納された可変長配列
+        ビンゴボードを生成する
+        \return ビンゴボードが格納された可変長配列
     */
-    auto makeBoard();
+    auto makeboard();
 
     //! A function.
     /*!
-    モンテカルロ・シミュレーションを行う
-    \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        モンテカルロ・シミュレーションを行う
+        \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     std::vector< std::vector<mypair2> > montecarlo();
 
     //! A function.
     /*!
-    モンテカルロ・シミュレーションの実装
-    \param uselock ロックが必要かどうか
-    \return モンテカルロ法の結果が格納された可変長配列
+        モンテカルロ・シミュレーションの実装
+        \return モンテカルロ法の結果が格納された可変長配列
     */
-    std::vector<mypair2> montecarloImpl(bool usemutex);
+    std::vector<mypair2> montecarloImpl();
 
     //! A function.
     /*!
-    モンテカルロ・シミュレーションをTBBで並列化して行う
-    \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        モンテカルロ・シミュレーションをTBBで並列化して行う
+        \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB();
 }
@@ -172,7 +167,7 @@ int main()
 
     cp.checkpoint_print();
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 namespace {
@@ -269,7 +264,7 @@ namespace {
         return std::sqrt(boost::accumulate(devtmp, 0.0) / static_cast<double>(MCMAX));
     }
 
-    auto makeBoard()
+    auto makeboard()
     {
         // 仮のビンゴボードを生成
         std::vector<std::int32_t> boardtmp(BOARDSIZE);
@@ -307,17 +302,17 @@ namespace {
         // 試行回数分繰り返す
         for (auto i = 0U; i < MCMAX; i++) {
             // モンテカルロ・シミュレーションの結果を代入
-            mcresult.push_back(montecarloImpl(false));
+            mcresult.push_back(montecarloImpl());
         }
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
     }
 
-    std::vector<mypair2> montecarloImpl(bool usemutex)
+    std::vector<mypair2> montecarloImpl()
     {
         // ビンゴボードを生成
-        auto board(makeBoard());
+        auto board(makeboard());
 
         // その行・列が既に埋まっているかどうかを格納する可変長配列
         // ROWCOLUMN個の要素をfalseで初期化
@@ -345,15 +340,9 @@ namespace {
         // 無限ループ
         for (auto i = 1; ; i++) {
             std::int32_t v;
-            if (usemutex) {
-                // ミューテックスを使ってロックする
-                tbb::mutex::scoped_lock lock;
-                lock.acquire(mutex);
-                v = rand();
-                lock.release();
-            }
-            else {
-                v = rand();
+            {
+                // 本来はロックが必要
+                v = std::rand();
             }
 
             // 乱数で得た数字で、かつまだ当たってないマスを検索
@@ -440,7 +429,7 @@ namespace {
             std::uint32_t(0),
             MCMAX,
             std::uint32_t(1),
-            [&mcresult](auto) { mcresult.push_back(montecarloImpl(true)); });
+            [&mcresult](auto) { mcresult.push_back(montecarloImpl()); });
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
