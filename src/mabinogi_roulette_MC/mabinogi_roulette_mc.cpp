@@ -6,17 +6,21 @@ This software is released under the BSD 2-Clause License.
 */
 
 #include "../checkpoint/checkpoint.h"
+#include "myrandom/myrand.h"
 #include <algorithm>                            // for std::shuffle
 #include <cstdint>                              // for std::int32_t
 #include <cmath>                                // for std::sqrt
+#include <fstream>                              // for std::ofstream
 #include <iostream>                             // for std::cout
 #include <map>                                  // for std::map
-#include <tuple>                                // for std::tuple
+#include <random>                               // for std::mt19937
+#include <tuple>                                // for std::tie
+#include <unordered_map>
 #include <utility>                              // for std::make_pair
 #include <vector>                               // for std::vector
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
 #include <boost/format.hpp>                     // for boost::format
-#include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::random_shuffle, boost::transform
+#include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::transform
 #include <boost/range/numeric.hpp>              // for boost::accumulate
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
 #include <tbb/parallel_for.h>                   // for tbb::parallel_for
@@ -64,6 +68,12 @@ namespace {
     */
     using mypair2 = std::pair<std::int32_t, std::int32_t>;
 
+    //! A typedef.
+    /*!
+        10個目の行・列が埋まったときの分布を格納するためのmapの型
+    */
+    using mymap = std::map<std::int32_t, std::int32_t>;
+    
     //! A function.
     /*!
         n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数を求める
@@ -86,7 +96,7 @@ namespace {
         \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
         \return 10個目の行・列が埋まったときの最頻値と分布のstd::pair
     */
-    std::pair<double, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
+    std::pair<std::int32_t, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
@@ -114,9 +124,10 @@ namespace {
     //! A function.
     /*!
         モンテカルロ・シミュレーションの実装
+        \param mr 自作乱数クラスのオブジェクト
         \return モンテカルロ法の結果が格納された可変長配列
     */
-    std::vector<mypair2> montecarloImpl();
+    std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr);
 
     //! A function.
     /*!
@@ -124,6 +135,13 @@ namespace {
         \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB();
+
+    //! A function.
+    /*!
+        10個目の行・列が埋まったときの分布をcsvファイルに出力する
+        \param distmap 10個目の行・列が埋まったときの分布
+    */
+    void outputcsv(mymap const & distmap);
 }
 
 int main()
@@ -157,10 +175,19 @@ int main()
             % fillavg[i];
     }
 
+    std::int32_t mode;
+    std::map<std::int32_t, std::int32_t> dist;
+    std::tie(mode, dist) = eval_mode(mcresult2);
+
+    std::ofstream ofs("result.csv");
+    for (auto && itr : dist) {
+        ofs << boost::format("%d,%d\n") % itr.first % itr.second;
+    }
+
     std::cout <<
         boost::format("10個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
         % eval_median(mcresult2)
-        % eval_mode(mcresult2).first
+        % mode
         % eval_std_deviation(trialavg[ROWCOLUMN - 1], mcresult2) << std::endl;
 
     cp.checkpoint("それ以外の処理", __LINE__);
@@ -225,28 +252,36 @@ namespace {
         }
     }
 
-    std::pair<double, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
+    std::pair<std::int32_t, mymap> eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
     {
-        std::map<std::int32_t, std::int32_t> dist;
+        // 10個目の行・列が埋まったときの分布
+        std::unordered_map<std::int32_t, std::int32_t> distmap;
 
+        // distmapを埋める
         boost::for_each(
             mcresult,
-            [&dist](auto const & res) {
-            auto const k = res[ROWCOLUMN - 1].first;
-            auto const lb = dist.lower_bound(k);
-            if (lb == dist.end() || dist.key_comp()(k, lb->first)) {
-                dist.insert(lb, std::make_pair(k, 1));
-            }
-            else {
-                lb->second++;
-            }
+            [&distmap](auto const & res) {
+                // 10個目の行・列が埋まったときの回数をkeyとする
+                auto const key = res[ROWCOLUMN - 1].first;
+
+                // keyが存在するかどうか
+                if (distmap.find(key) == distmap.end()) {
+                    // 新しく構築
+                    distmap.emplace(key, 1);
+                }
+                else {
+                    // keyが指す値を更新
+                    distmap[key]++;
+                }
         });
 
-        auto const res = boost::max_element(
-            dist,
+        // 最頻値を探索
+        auto const mode = boost::max_element(
+            distmap,
             [](auto const & p1, auto const & p2) { return p1.second < p2.second; })->first;
 
-        return std::make_pair(res, dist);
+        // 最頻値と10個目の行・列が埋まったときの分布をpairにして返す
+        return std::make_pair(mode, mymap(distmap.begin(), distmap.end()));
     }
 
     double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
@@ -273,7 +308,7 @@ namespace {
         boost::algorithm::iota(boardtmp, 1);
 
         // 仮のビンゴボードの数字をシャッフル
-        boost::random_shuffle(boardtmp);
+        std::shuffle(boardtmp.begin(), boardtmp.end(), std::mt19937());
 
         // ビンゴボードを生成
         std::vector<mypair> board(BOARDSIZE);
@@ -290,26 +325,26 @@ namespace {
 
     std::vector< std::vector<mypair2> > montecarlo()
     {
-        // 乱数の初期化
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
         std::vector< std::vector<mypair2> > mcresult;
 
         // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
 
+        // 自作乱数クラスを初期化
+        myrandom::MyRand mr(1, BOARDSIZE);
+
         // 試行回数分繰り返す
         for (auto i = 0U; i < MCMAX; i++) {
             // モンテカルロ・シミュレーションの結果を代入
-            mcresult.push_back(montecarloImpl());
+            mcresult.push_back(montecarloImpl(mr));
         }
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
     }
 
-    std::vector<mypair2> montecarloImpl()
+    std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
     {
         // ビンゴボードを生成
         auto board(makeboard());
@@ -339,14 +374,8 @@ namespace {
 
         // 無限ループ
         for (auto i = 1; ; i++) {
-            std::int32_t v;
-            {
-                // 本来はロックが必要
-                v = std::rand();
-            }
-
             // 乱数で得た数字で、かつまだ当たってないマスを検索
-            auto itr = boost::find(board, std::make_pair(static_cast<std::int32_t>(v % BOARDSIZE) + 1, false));
+            auto itr = boost::find(board, std::make_pair(mr.myrand(), false));
 
             // そのようなマスがあった
             if (itr != board.end()) {
@@ -414,9 +443,6 @@ namespace {
 
     tbb::concurrent_vector< std::vector<mypair2> > montecarloTBB()
     {
-        // 乱数の初期化
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
         // 複数のスレッドが同時にアクセスする可能性があるためtbb::concurrent_vectorを使う
         tbb::concurrent_vector< std::vector<mypair2> > mcresult;
@@ -426,10 +452,16 @@ namespace {
 
         // MCMAX回のループを並列化して実行
         tbb::parallel_for(
-            std::uint32_t(0),
+            0U,
             MCMAX,
-            std::uint32_t(1),
-            [&mcresult](auto) { mcresult.push_back(montecarloImpl()); });
+            1U,
+            [&mcresult](auto) {
+                // 自作乱数クラスを初期化
+                myrandom::MyRand mr(1, BOARDSIZE);
+
+                // モンテカルロ・シミュレーションの結果を代入
+                mcresult.push_back(montecarloImpl(mr));
+        });
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
