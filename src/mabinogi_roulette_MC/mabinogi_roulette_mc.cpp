@@ -12,10 +12,11 @@ This software is released under the BSD 2-Clause License.
 #include <cmath>                                // for std::sqrt
 #include <fstream>                              // for std::ofstream
 #include <iostream>                             // for std::cout
+#include <iterator>                             // for std::ostream_iterator
 #include <map>                                  // for std::map
 #include <random>                               // for std::mt19937
 #include <tuple>                                // for std::tie
-#include <unordered_map>
+#include <unordered_map>                        // for std::unordered_map
 #include <utility>                              // for std::make_pair
 #include <vector>                               // for std::vector
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
@@ -176,13 +177,10 @@ int main()
     }
 
     std::int32_t mode;
-    std::map<std::int32_t, std::int32_t> dist;
-    std::tie(mode, dist) = eval_mode(mcresult2);
+    std::map<std::int32_t, std::int32_t> distmap;
+    std::tie(mode, distmap) = eval_mode(mcresult2);
 
-    std::ofstream ofs("result.csv");
-    for (auto && itr : dist) {
-        ofs << boost::format("%d,%d\n") % itr.first % itr.second;
-    }
+    outputcsv(distmap);
 
     std::cout <<
         boost::format("10個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
@@ -266,7 +264,7 @@ namespace {
 
                 // keyが存在するかどうか
                 if (distmap.find(key) == distmap.end()) {
-                    // 新しく構築
+                    // keyが存在しなかったので、そのキーでハッシュを拡張（値1）
                     distmap.emplace(key, 1);
                 }
                 else {
@@ -286,16 +284,19 @@ namespace {
 
     double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
     {
+        // 標準偏差を求めるために必要な可変長配列
         std::vector<double> devtmp(MCMAX);
 
+        // 標準偏差の計算
         boost::transform(
             mcresult,
             devtmp.begin(),
             [avgten](auto const & res) {
-            auto const val = static_cast<double>(res[ROWCOLUMN - 1].first);
-            return (val - avgten) * (val - avgten);
+                auto const val = static_cast<double>(res[ROWCOLUMN - 1].first);
+                return (val - avgten) * (val - avgten);
         });
 
+        // 標準偏差を求める
         return std::sqrt(boost::accumulate(devtmp, 0.0) / static_cast<double>(MCMAX));
     }
 
@@ -465,5 +466,15 @@ namespace {
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
+    }
+
+    void outputcsv(mymap const & distmap)
+    {
+        std::ofstream ofs("result.csv");
+
+        boost::transform(
+            distmap,
+            std::ostream_iterator<std::string>(ofs, "\n"),
+            [](auto const & p) { return (boost::format("%d,%d") % p.first % p.second).str(); });
     }
 }
