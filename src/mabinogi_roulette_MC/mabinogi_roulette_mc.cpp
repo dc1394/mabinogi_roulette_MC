@@ -1,8 +1,8 @@
 ﻿/*! \file mabinogi_roulette_mc.cpp
-\brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションを行う
+    \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションを行う
 
-Copyright © 2015-2016 @dc1394 All Rights Reserved.
-This software is released under the BSD 2-Clause License.
+    Copyright © 2015-2016 @dc1394 All Rights Reserved.
+    This software is released under the BSD 2-Clause License.
 */
 
 #include "../checkpoint/checkpoint.h"
