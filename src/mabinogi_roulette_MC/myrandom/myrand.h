@@ -78,7 +78,7 @@ namespace myrandom {
 
         //! A private constructor (deleted).
         /*!
-        デフォルトコンストラクタ（禁止）
+            デフォルトコンストラクタ（禁止）
         */
         MyRand() = delete;
 
