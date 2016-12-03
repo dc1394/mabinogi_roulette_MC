@@ -23,8 +23,8 @@
 #include <boost/format.hpp>                     // for boost::format
 #include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::transform
 #include <boost/range/numeric.hpp>              // for boost::accumulate
+#include <cilk/cilk.h>                          // for cilk_for
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
-#include <tbb/parallel_for.h>                   // for tbb::parallel_for
 
 namespace {
     //! A global variable (constant expression).
@@ -452,17 +452,13 @@ namespace {
         mcresult.reserve(MCMAX);
 
         // MCMAX回のループを並列化して実行
-        tbb::parallel_for(
-            0U,
-            MCMAX,
-            1U,
-            [&mcresult](auto) {
-                // 自作乱数クラスを初期化
-                myrandom::MyRand mr(1, BOARDSIZE);
+        cilk_for (auto i = 0U; i < MCMAX; i++) {
+            // 自作乱数クラスを初期化
+            myrandom::MyRand mr(1, BOARDSIZE);
 
-                // モンテカルロ・シミュレーションの結果を代入
-                mcresult.push_back(montecarloImpl(mr));
-        });
+            // モンテカルロ・シミュレーションの結果を代入
+            mcresult.push_back(montecarloImpl(mr));
+        }
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
