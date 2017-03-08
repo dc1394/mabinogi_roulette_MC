@@ -17,7 +17,7 @@
 #include <random>                               // for std::mt19937
 #include <tuple>                                // for std::tie
 #include <unordered_map>                        // for std::unordered_map
-#include <utility>                              // for std::make_pair
+#include <utility>                              // for std::make_pair, std::move
 #include <vector>                               // for std::vector
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
 #include <boost/format.hpp>                     // for boost::format
@@ -222,7 +222,7 @@ namespace {
             fillavg[i] = static_cast<double>(fillsum) / static_cast<double>(MCMAX);
         }
 
-        return std::make_pair(trialavg, fillavg);
+        return std::make_pair(std::move(trialavg), std::move(fillavg));
     }
 
     std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
