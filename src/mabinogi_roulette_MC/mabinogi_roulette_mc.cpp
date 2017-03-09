@@ -19,12 +19,16 @@
 #include <unordered_map>                        // for std::unordered_map
 #include <utility>                              // for std::make_pair, std::move
 #include <vector>                               // for std::vector
+#include <valarray>                             // for std::valarray
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
 #include <boost/format.hpp>                     // for boost::format
 #include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::transform
-#include <boost/range/numeric.hpp>              // for boost::accumulate
-#include <cilk/cilk.h>                          // for cilk_for
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
+#ifdef __INTEL_COMPILER
+    #include <cilk/cilk.h>                      // for cilk_for
+#else
+    #include <tbb/parallel_for.h>               // for tbb::parallel_for
+#endif
 
 namespace {
     //! A global variable (constant expression).
@@ -81,7 +85,7 @@ namespace {
         \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
         \return n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
     */
-    std::pair< std::vector<double>, std::vector<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
+    std::pair< std::valarray<double>, std::valarray<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
@@ -163,7 +167,7 @@ int main()
 
     cp.checkpoint("並列化有効", __LINE__);
 
-    std::vector<double> trialavg, fillavg;
+    std::valarray<double> trialavg, fillavg;
 
     std::tie(trialavg, fillavg) = eval_average(mcresult2);
 
@@ -196,13 +200,13 @@ int main()
 }
 
 namespace {
-    std::pair< std::vector<double>, std::vector<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
+    std::pair< std::valarray<double>, std::valarray<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
     {
         // モンテカルロ・シミュレーションの平均試行回数の結果を格納した可変長配列
-        std::vector<double> trialavg(ROWCOLUMN);
+        std::valarray<double> trialavg(ROWCOLUMN);
 
         // モンテカルロ・シミュレーションのi回目の試行で、埋まっているマスの数を格納した可変長配列
-        std::vector<double> fillavg(ROWCOLUMN);
+        std::valarray<double> fillavg(ROWCOLUMN);
 
         // 行・列の総数分繰り返す
         for (auto i = 0U; i < ROWCOLUMN; i++) {
@@ -285,19 +289,19 @@ namespace {
     double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
     {
         // 標準偏差を求めるために必要な可変長配列
-        std::vector<double> devtmp(MCMAX);
+        std::valarray<double> devtmp(MCMAX);
 
         // 標準偏差の計算
         boost::transform(
             mcresult,
-            devtmp.begin(),
+            std::begin(devtmp),
             [avgten](auto const & res) {
                 auto const val = static_cast<double>(res[ROWCOLUMN - 1].first);
                 return (val - avgten) * (val - avgten);
         });
 
         // 標準偏差を求める
-        return std::sqrt(boost::accumulate(devtmp, 0.0) / static_cast<double>(MCMAX));
+        return std::sqrt(devtmp.sum() / static_cast<double>(MCMAX));
     }
 
     auto makeboard()
@@ -452,13 +456,25 @@ namespace {
         mcresult.reserve(MCMAX);
 
         // MCMAX回のループを並列化して実行
+#ifdef __INTEL_COMPILER
         cilk_for (auto i = 0U; i < MCMAX; i++) {
+#else
+        tbb::parallel_for(
+            0U,
+            MCMAX,
+            1U,
+            [&mcresult](auto) {
+#endif
             // 自作乱数クラスを初期化
             myrandom::MyRand mr(1, BOARDSIZE);
 
             // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl(mr));
-        }
+#ifdef __INTEL_COMPILER
+            }
+#else
+        });
+#endif
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;

@@ -7,7 +7,7 @@ DEPS :=	$(SRCS:%.cpp=%.d)
 VPATH  = src/checkpoint src/mabinogi_roulette_MC src/mabinogi_roulette_MC/myrandom 
 CXX = clang++
 CXXFLAGS = -Wextra -O3 -pipe -std=c++14
-LDFLAGS = -L/home/dc1394/oss/tbb44_20150728oss/lib/intel64/gcc4.4 -ltbb
+LDFLAGS = -L/home/dc1394/oss/tbb2017_20170226oss/lib/intel64/gcc4.7 -ltbb
 
 all: $(PROG) ;
 #rm -f $(OBJS) $(DEPS)
@@ -18,7 +18,7 @@ $(PROG): $(OBJS)
 		$(CXX) $(LDFLAGS) $(CXXFLAGS) -o $@ $^
 
 %.o: %.cpp
-		$(CXX) $(CXXFLAGS) -c -MMD -MP $<
+		$(CXX) $(CXXFLAGS) -c -MMD -MP -DCHECK_PARARELL_PERFORM $<
 
 clean:
 		rm -f $(PROG) $(OBJS) $(DEPS)
