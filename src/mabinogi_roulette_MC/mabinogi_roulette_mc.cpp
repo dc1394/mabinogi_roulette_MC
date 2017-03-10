@@ -1,5 +1,5 @@
 ﻿/*! \file mabinogi_roulette_mc.cpp
-    \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションで確かめる
+    \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションする
 
     Copyright © 2015-2016 @dc1394 All Rights Reserved.
     This software is released under the BSD 2-Clause License.
