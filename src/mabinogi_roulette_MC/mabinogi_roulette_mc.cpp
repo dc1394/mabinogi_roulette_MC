@@ -1,5 +1,5 @@
 ﻿/*! \file mabinogi_roulette_mc.cpp
-    \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションを行う
+    \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションで確かめる
 
     Copyright © 2015-2016 @dc1394 All Rights Reserved.
     This software is released under the BSD 2-Clause License.
@@ -155,7 +155,7 @@ int main()
 
     cp.checkpoint("処理開始", __LINE__);
 
-#ifdef CHECK_PARARELL_PERFORM
+#ifdef _CHECK_PARARELL_PERFORM
     // モンテカルロ・シミュレーションの結果を代入
     auto const mcresult(montecarlo());
 
@@ -328,6 +328,7 @@ namespace {
         return board;
     }
 
+#ifdef _CHECK_PARARELL_PERFORM
     std::vector< std::vector<mypair2> > montecarlo()
     {
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
@@ -348,6 +349,7 @@ namespace {
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;
     }
+#endif
 
     std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
     {
