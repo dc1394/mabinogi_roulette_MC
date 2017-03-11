@@ -119,12 +119,14 @@ namespace {
     */
     auto makeboard();
 
+#ifdef _CHECK_PARALELL_PERFORM
     //! A function.
     /*!
         モンテカルロ・シミュレーションを行う
         \return モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
     */
     std::vector< std::vector<mypair2> > montecarlo();
+#endif
 
     //! A function.
     /*!
@@ -155,7 +157,7 @@ int main()
 
     cp.checkpoint("処理開始", __LINE__);
 
-#ifdef _CHECK_PARARELL_PERFORM
+#ifdef _CHECK_PARALELL_PERFORM
     // モンテカルロ・シミュレーションの結果を代入
     auto const mcresult(montecarlo());
 
@@ -328,7 +330,7 @@ namespace {
         return board;
     }
 
-#ifdef _CHECK_PARARELL_PERFORM
+#ifdef _CHECK_PARALELL_PERFORM
     std::vector< std::vector<mypair2> > montecarlo()
     {
         // モンテカルロ・シミュレーションの結果を格納するための二次元可変長配列
