@@ -22,7 +22,7 @@
 #include <valarray>                             // for std::valarray
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
 #include <boost/format.hpp>                     // for boost::format
-#include <boost/range/algorithm.hpp>            // for boost::find, boost::for_each, boost::max_element, boost::transform
+#include <boost/range/algorithm.hpp>            // for boost::find, boost::max_element, boost::transform
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
 #ifdef __INTEL_COMPILER
     #include <cilk/cilk.h>                      // for cilk_for
@@ -262,22 +262,21 @@ namespace {
         std::unordered_map<std::int32_t, std::int32_t> distmap;
 
         // distmapを埋める
-        boost::for_each(
-            mcresult,
-            [&distmap](auto const & res) {
-                // 10個目の行・列が埋まったときの回数をkeyとする
-                auto const key = res[ROWCOLUMN - 1].first;
+        for (auto const & res : mcresult) {
+            // 10個目の行・列が埋まったときの回数をkeyとする
+            auto const key = res[ROWCOLUMN - 1].first;
 
-                // keyが存在するかどうか
-                if (distmap.find(key) == distmap.end()) {
-                    // keyが存在しなかったので、そのキーでハッシュを拡張（値1）
-                    distmap.emplace(key, 1);
-                }
-                else {
-                    // keyが指す値を更新
-                    distmap[key]++;
-                }
-        });
+            // keyが存在するかどうか
+            auto itr = distmap.find(key);
+            if (itr == distmap.end()) {
+                // keyが存在しなかったので、そのキーでハッシュを拡張（値1）
+                distmap.emplace(key, 1);
+            }
+            else {
+                // keyが指す値を更新
+                itr->second++;
+            }
+        }
 
         // 最頻値を探索
         auto const mode = boost::max_element(
