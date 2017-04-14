@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdint>                      // for std::int32_t, std::uint_least32_t
+#include <functional>                   // for std::ref
 #include <random>                       // for std::mt19937
 #include <vector>                       // for std::vector
 #include <boost/range/algorithm.hpp>    // for boost::generate

@@ -12,7 +12,7 @@
 #include <cmath>                                // for std::sqrt
 #include <fstream>                              // for std::ofstream
 #include <iostream>                             // for std::cout
-#include <iterator>                             // for std::ostream_iterator
+#include <iterator>                             // for std::begin, std::ostream_iterator
 #include <map>                                  // for std::map
 #include <random>                               // for std::mt19937
 #include <tuple>                                // for std::tie
@@ -170,7 +170,6 @@ int main()
     cp.checkpoint("並列化有効", __LINE__);
 
     std::valarray<double> trialavg, fillavg;
-
     std::tie(trialavg, fillavg) = eval_average(mcresult2);
 
     for (auto i = 0U; i < ROWCOLUMN; i++) {
@@ -485,7 +484,7 @@ namespace {
 
     void outputcsv(mymap const & distmap)
     {
-        std::ofstream ofs("result.csv");
+        std::ofstream ofs("distribution.csv");
 
         boost::transform(
             distmap,
