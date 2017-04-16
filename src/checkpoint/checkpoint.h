@@ -119,8 +119,9 @@ namespace checkpoint {
 
         //! A destructor.
         /*!
+            デフォルトデストラクタ
         */
-        ~CheckPoint();
+        ~CheckPoint() = default;
 
         // #endregion コンストラクタ・デストラクタ
 

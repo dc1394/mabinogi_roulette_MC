@@ -31,10 +31,6 @@ namespace checkpoint {
 	{
 	}
 
-    CheckPoint::~CheckPoint()
-    {
-    }
-
     void CheckPoint::checkpoint(char const * action, std::int32_t line)
 	{
 		BOOST_ASSERT(cfp->cur < static_cast<std::int32_t>(CheckPoint::CheckPointFastImpl::N));
