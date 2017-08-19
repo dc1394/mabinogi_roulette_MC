@@ -6,7 +6,11 @@
 */
 
 #include "../checkpoint/checkpoint.h"
-#include "myrandom/myrand.h"
+#ifdef __INTEL_COMPILER
+	#include "myrandom/myrandavx512.h"
+#else
+	#include "myrandom/myrand.h"
+#endif
 #include <algorithm>                            // for std::shuffle
 #include <cstdint>                              // for std::int32_t
 #include <cmath>                                // for std::sqrt
@@ -134,7 +138,11 @@ namespace {
         \param mr 自作乱数クラスのオブジェクト
         \return モンテカルロ法の結果が格納された可変長配列
     */
-    std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr);
+#ifdef __INTEL_COMPILER
+    std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr);
+#else
+	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr);
+#endif
 
     //! A function.
     /*!
@@ -337,8 +345,12 @@ namespace {
         // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
 
-        // 自作乱数クラスを初期化
-        myrandom::MyRand mr(1, BOARDSIZE);
+		// 自作乱数クラスを初期化
+#ifdef __INTEL_COMPILER
+		myrandom::MyRandAvx512 mr(1, BOARDSIZE);
+#else
+		myrandom::MyRand mr(1, BOARDSIZE);
+#endif
 
         // 試行回数分繰り返す
         for (auto i = 0U; i < MCMAX; i++) {
@@ -351,7 +363,11 @@ namespace {
     }
 #endif
 
-    std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
+#ifdef __INTEL_COMPILER
+    std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr)
+#else
+	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
+#endif
     {
         // ビンゴボードを生成
         auto board(makeboard());
@@ -468,8 +484,11 @@ namespace {
             [&mcresult](auto) {
 #endif
             // 自作乱数クラスを初期化
-            myrandom::MyRand mr(1, BOARDSIZE);
-
+#ifdef __INTEL_COMPILER
+			myrandom::MyRandAvx512 mr(1, BOARDSIZE);
+#else
+			myrandom::MyRand mr(1, BOARDSIZE);
+#endif
             // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl(mr));
 #ifdef __INTEL_COMPILER
