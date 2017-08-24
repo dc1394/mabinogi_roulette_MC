@@ -142,8 +142,6 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>_CHECK_PARALELL_PERFORM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>MaxSpeedHighLevel</Optimization>
-      <GenerateAlternateCodePaths>CORE512</GenerateAlternateCodePaths>
-      <UseProcessorExtensions>CORE512</UseProcessorExtensions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

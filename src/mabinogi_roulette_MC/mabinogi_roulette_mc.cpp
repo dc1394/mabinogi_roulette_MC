@@ -6,7 +6,7 @@
 */
 
 #include "../checkpoint/checkpoint.h"
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
 	#include "myrandom/myrandavx512.h"
 #else
 	#include "myrandom/myrand.h"
@@ -29,7 +29,7 @@
 #include <boost/range/algorithm.hpp>            // for boost::find, boost::max_element, boost::transform
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
 #ifdef __INTEL_COMPILER
-    #include <cilk/cilk.h>                      // for cilk_for
+	#include <cilk/cilk.h>                      // for cilk_for
 #else
     #include <tbb/parallel_for.h>               // for tbb::parallel_for
 #endif
@@ -138,7 +138,7 @@ namespace {
         \param mr 自作乱数クラスのオブジェクト
         \return モンテカルロ法の結果が格納された可変長配列
     */
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
     std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr);
 #else
 	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr);
@@ -346,7 +346,7 @@ namespace {
         mcresult.reserve(MCMAX);
 
 		// 自作乱数クラスを初期化
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
 		myrandom::MyRandAvx512 mr(1, BOARDSIZE);
 #else
 		myrandom::MyRand mr(1, BOARDSIZE);
@@ -363,7 +363,7 @@ namespace {
     }
 #endif
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
     std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr)
 #else
 	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
@@ -484,7 +484,7 @@ namespace {
             [&mcresult](auto) {
 #endif
             // 自作乱数クラスを初期化
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
 			myrandom::MyRandAvx512 mr(1, BOARDSIZE);
 #else
 			myrandom::MyRand mr(1, BOARDSIZE);

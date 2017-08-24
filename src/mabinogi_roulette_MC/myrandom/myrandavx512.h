@@ -15,8 +15,8 @@
 #include <functional>                   // for std::ref
 #include <random>						// for std::random_device
 #include <vector>                       // for std::vector
-#include <svrng.h>						// for svrng_new_uniform_distribution_int, svrng_new_mt19937_engine, svrng_generate16_int
 #include <immintrin.h>					// for _mm512_store_si512
+#include <svrng.h>						// for svrng_new_uniform_distribution_int, svrng_new_mt19937_engine, svrng_generate16_int
 #include <boost/range/algorithm.hpp>    // for boost::generate
 
 namespace myrandom {
