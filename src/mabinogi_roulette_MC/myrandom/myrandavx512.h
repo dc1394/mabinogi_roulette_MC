@@ -71,6 +71,10 @@ namespace myrandom {
 		// #region メンバ変数
 
 	private:
+		//! A private member variable.
+		/*!
+			AVX-512レジスタのバイト数
+		*/
 		static auto constexpr AVXREGBYTE = 16;
 
 		//! A private member variable.
@@ -135,6 +139,8 @@ namespace myrandom {
 		// 非決定的な乱数でシード列を構築する
 		boost::generate(v, std::ref(rnd));
 		
+        //srand(static_cast<std::uint32_t>(time(nullptr)));
+        
 		// 乱数エンジン
 		randengine_ = svrng_new_mt19937_engine(v[0]);
 	}
