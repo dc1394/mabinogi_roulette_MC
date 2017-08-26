@@ -1,11 +1,12 @@
 ﻿/*! \file mabinogi_roulette_mc.cpp
     \brief マビノギのルーレットビンゴをモンテカルロ・シミュレーションする
 
-    Copyright © 2015-2016 @dc1394 All Rights Reserved.
+    Copyright © 2015-2017 @dc1394 All Rights Reserved.
     This software is released under the BSD 2-Clause License.
 */
 
 #include "../checkpoint/checkpoint.h"
+#include "goexit/goexit.h"
 #if defined(__INTEL_COMPILER) && defined(__AVX512F__)
     #include "myrandom/myrandavx512.h"
 #else
@@ -79,42 +80,45 @@ namespace {
 
     //! A typedef.
     /*!
-        10個目の行・列が埋まったときの分布を格納するためのmapの型
+        (n + 1)個目の行・列が埋まったときの分布を格納するためのmapの型
     */
     using mymap = std::map<std::int32_t, std::int32_t>;
     
     //! A function.
     /*!
-        n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数を求める
+        (n + 1)個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数を求める
         \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-        \return n個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
+        \return (n + 1)個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
     */
     std::pair< std::valarray<double>, std::valarray<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
 
     //! A function.
     /*!
-        10個目の行・列が埋まったときの中央値を求める
-        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-        \return 10個目の行・列が埋まったときの中央値
+        (n + 1)個目の行・列が埋まったときの中央値を求める
+        \param (n + 1)個目の数値n
+		\param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return (n + 1)個目の行・列が埋まったときの中央値
     */
-    std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
+    std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n);
 
     //! A function.
     /*!
-        10個目の行・列が埋まったときの最頻値と分布を求める
-        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-        \return 10個目の行・列が埋まったときの最頻値と分布のstd::pair
+        (n + 1)個目の行・列が埋まったときの最頻値と分布を求める
+        \param (n + 1)個目の数値n
+		\param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return (n + 1)個目の行・列が埋まったときの最頻値と分布のstd::pair
     */
-    std::pair<std::int32_t, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
+    std::pair<std::int32_t, std::map<std::int32_t, std::int32_t> > eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n);
 
     //! A function.
     /*!
-        10個目の行・列が埋まったときの標準偏差を求める
-        \param avgten 10個目の行・列が埋まったときの平均試行回数
-        \param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-        \return 10個目の行・列が埋まったときの標準偏差
+        (n + 1)個目の行・列が埋まったときの標準偏差を求める
+        \param avgten (n + 1)個目の行・列が埋まったときの平均試行回数
+        \param (n + 1)個目の数値n
+		\param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
+        \return (n + 1)個目の行・列が埋まったときの標準偏差
     */
-    double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult);
+    double eval_std_deviation(double avg, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n);
 
     //! A function.
     /*!
@@ -153,10 +157,11 @@ namespace {
 
     //! A function.
     /*!
-        10個目の行・列が埋まったときの分布をcsvファイルに出力する
-        \param distmap 10個目の行・列が埋まったときの分布
+        (n + 1)個目の行・列が埋まったときの分布をcsvファイルに出力する
+		\param distmap (n + 1)個目の行・列が埋まったときの分布
+		\param (n + 1)個目の数値n
     */
-    void outputcsv(mymap const & distmap);
+    void outputcsv(mymap const & distmap, std::int32_t n);
 }
 
 int main()
@@ -180,30 +185,35 @@ int main()
     std::valarray<double> trialavg, fillavg;
     std::tie(trialavg, fillavg) = eval_average(mcresult2);
 
-    for (auto i = 0U; i < ROWCOLUMN; i++) {
-        auto const efficiency = trialavg[i] / static_cast<double>(i + 1);
+    for (auto n = 0U; n < ROWCOLUMN; n++) {
+        auto const efficiency = trialavg[n] / static_cast<double>(n + 1);
         std::cout
             << boost::format("%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
-            % (i + 1) % trialavg[i] % efficiency
+            % (n + 1) % trialavg[n] % efficiency
             << boost::format("埋まっているマスの平均個数：%.1f個\n")
-            % fillavg[i];
+            % fillavg[n];
     }
 
-    std::int32_t mode;
-    std::map<std::int32_t, std::int32_t> distmap;
-    std::tie(mode, distmap) = eval_mode(mcresult2);
+	for (auto n = 0U; n < ROWCOLUMN; n++) {
+		std::int32_t mode;
+		std::map<std::int32_t, std::int32_t> distmap;
+		std::tie(mode, distmap) = eval_mode(mcresult2, n);
 
-    outputcsv(distmap);
+		outputcsv(distmap, n);
 
-    std::cout <<
-        boost::format("10個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
-        % eval_median(mcresult2)
-        % mode
-        % eval_std_deviation(trialavg[ROWCOLUMN - 1], mcresult2) << std::endl;
+		std::cout <<
+			boost::format("%d個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
+			% (n + 1)
+			% eval_median(mcresult2, n)
+			% mode
+			% eval_std_deviation(trialavg[n], mcresult2, n) << std::endl;
+	}
 
     cp.checkpoint("それ以外の処理", __LINE__);
 
     cp.checkpoint_print();
+
+	goexit::goexit();
 
     return 0;
 }
@@ -214,11 +224,11 @@ namespace {
         // モンテカルロ・シミュレーションの平均試行回数の結果を格納した可変長配列
         std::valarray<double> trialavg(ROWCOLUMN);
 
-        // モンテカルロ・シミュレーションのi回目の試行で、埋まっているマスの数を格納した可変長配列
+        // モンテカルロ・シミュレーションのn回目の試行で、埋まっているマスの数を格納した可変長配列
         std::valarray<double> fillavg(ROWCOLUMN);
 
         // 行・列の総数分繰り返す
-        for (auto i = 0U; i < ROWCOLUMN; i++) {
+        for (auto n = 0U; n < ROWCOLUMN; n++) {
             // 総和を0で初期化
             auto trialsum = 0;
             auto fillsum = 0;
@@ -226,19 +236,19 @@ namespace {
             // 試行回数分繰り返す
             for (auto j = 0U; j < MCMAX; j++) {
                 // j回目の結果を加える
-                trialsum += mcresult[j][i].first;
-                fillsum += mcresult[j][i].second;
+                trialsum += mcresult[j][n].first;
+                fillsum += mcresult[j][n].second;
             }
 
-            // 平均を算出してi行・列目のtrialavg、fillavgに代入
-            trialavg[i] = static_cast<double>(trialsum) / static_cast<double>(MCMAX);
-            fillavg[i] = static_cast<double>(fillsum) / static_cast<double>(MCMAX);
+            // 平均を算出してn行・列目のtrialavg、fillavgに代入
+            trialavg[n] = static_cast<double>(trialsum) / static_cast<double>(MCMAX);
+            fillavg[n] = static_cast<double>(fillsum) / static_cast<double>(MCMAX);
         }
 
         return std::make_pair(std::move(trialavg), std::move(fillavg));
     }
 
-    std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
+    std::int32_t eval_median(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n)
     {
         // 中央値を求めるために必要な可変長配列
         std::vector<std::int32_t> medtmp(MCMAX);
@@ -247,7 +257,7 @@ namespace {
         boost::transform(
             mcresult,
             medtmp.begin(),
-            [](auto const & res) { return res[ROWCOLUMN - 1].first; });
+            [n](auto const & res) { return res[n].first; });
 
         // 中央値を求めるためにソートする
         boost::sort(medtmp);
@@ -263,15 +273,15 @@ namespace {
         }
     }
 
-    std::pair<std::int32_t, mymap> eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
+    std::pair<std::int32_t, mymap> eval_mode(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n)
     {
-        // 10個目の行・列が埋まったときの分布
+        // (n + 1)個目の行・列が埋まったときの分布
         std::unordered_map<std::int32_t, std::int32_t> distmap;
 
         // distmapを埋める
         for (auto const & res : mcresult) {
-            // 10個目の行・列が埋まったときの回数をkeyとする
-            auto const key = res[ROWCOLUMN - 1].first;
+            // (n + 1)個目の行・列が埋まったときの回数をkeyとする
+            auto const key = res[n].first;
 
             // keyが存在するかどうか
             auto itr = distmap.find(key);
@@ -290,11 +300,11 @@ namespace {
             distmap,
             [](auto const & p1, auto const & p2) { return p1.second < p2.second; })->first;
 
-        // 最頻値と10個目の行・列が埋まったときの分布をpairにして返す
+        // 最頻値と(n + 1)個目の行・列が埋まったときの分布をpairにして返す
         return std::make_pair(mode, mymap(distmap.begin(), distmap.end()));
     }
 
-    double eval_std_deviation(double avgten, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult)
+    double eval_std_deviation(double avg, tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::int32_t n)
     {
         // 標準偏差を求めるために必要な可変長配列
         std::valarray<double> devtmp(MCMAX);
@@ -303,9 +313,9 @@ namespace {
         boost::transform(
             mcresult,
             std::begin(devtmp),
-            [avgten](auto const & res) {
-                auto const val = static_cast<double>(res[ROWCOLUMN - 1].first);
-                return (val - avgten) * (val - avgten);
+            [avg, n](auto const & res) {
+                auto const val = static_cast<double>(res[n].first);
+                return (val - avg) * (val - avg);
         });
 
         // 標準偏差を求める
@@ -353,7 +363,7 @@ namespace {
 #endif
 
         // 試行回数分繰り返す
-        for (auto i = 0U; i < MCMAX; i++) {
+        for (auto n = 0U; n < MCMAX; n++) {
             // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl(mr));
         }
@@ -396,7 +406,7 @@ namespace {
         };
 
         // 無限ループ
-        for (auto i = 1; ; i++) {
+        for (auto n = 1; ; n++) {
             // 乱数で得た数字で、かつまだ当たってないマスを検索
             auto itr = boost::find(board, std::make_pair(mr.myrand(), false));
 
@@ -429,7 +439,7 @@ namespace {
                     rcfill[j] = true;
 
                     // 要した試行回数と、その時点で埋まったマスの数を格納
-                    fillnum.push_back(std::make_pair(i, sum(board)));
+                    fillnum.push_back(std::make_pair(n, sum(board)));
                 }
 
                 // 各列が埋まったかどうかのフラグ
@@ -449,7 +459,7 @@ namespace {
                     rcfill[j + ROW] = true;
 
                     // 要した試行回数と、その時点で埋まったマスの数を格納
-                    fillnum.push_back(std::make_pair(i, sum(board)));
+                    fillnum.push_back(std::make_pair(n, sum(board)));
                 }
             }
 
@@ -475,7 +485,7 @@ namespace {
 
         // MCMAX回のループを並列化して実行
 #ifdef __INTEL_COMPILER
-        cilk_for (auto i = 0U; i < MCMAX; i++) {
+        cilk_for (auto n = 0U; n < MCMAX; n++) {
 #else
         tbb::parallel_for(
             0U,
@@ -501,9 +511,9 @@ namespace {
         return mcresult;
     }
 
-    void outputcsv(mymap const & distmap)
+    void outputcsv(mymap const & distmap, std::int32_t n)
     {
-        std::ofstream ofs("distribution.csv");
+        std::ofstream ofs((boost::format("distribution_%d個目.csv") % (n + 1)).str());
 
         boost::transform(
             distmap,

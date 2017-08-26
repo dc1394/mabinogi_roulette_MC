@@ -16,10 +16,19 @@
     <Filter Include="ヘッダー ファイル\myrandom">
       <UniqueIdentifier>{ee1c4d11-2bbd-4824-bf71-93e59205f7a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\goexit">
+      <UniqueIdentifier>{9ade3cba-07ee-4471-b294-2c8d13d269be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\goexit">
+      <UniqueIdentifier>{c78106b9-f4ab-4e56-9521-2673e656efc0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mabinogi_roulette_mc.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="goexit.cpp">
+      <Filter>ソース ファイル\goexit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +37,9 @@
     </ClInclude>
     <ClInclude Include="myrandom\myrandavx512.h">
       <Filter>ヘッダー ファイル\myrandom</Filter>
+    </ClInclude>
+    <ClInclude Include="goexit\goexit.h">
+      <Filter>ヘッダー ファイル\goexit</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

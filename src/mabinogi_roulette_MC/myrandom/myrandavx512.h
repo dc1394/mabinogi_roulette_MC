@@ -138,8 +138,6 @@ namespace myrandom {
 		// ベクタの初期化
 		// 非決定的な乱数でシード列を構築する
 		boost::generate(v, std::ref(rnd));
-		
-        //srand(static_cast<std::uint32_t>(time(nullptr)));
         
 		// 乱数エンジン
 		randengine_ = svrng_new_mt19937_engine(v[0]);
