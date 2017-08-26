@@ -10,19 +10,14 @@
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <conio.h>                  // for _getch
-#else
-    #include <cstdio>                   // for std::getchar 
 #endif
 
 namespace goexit {
     void goexit()
     {
-        std::cout << "終了するには何かキーを押してください..." << std::endl;
-
 #if defined(_WIN32) || defined(_WIN64)
+        std::cout << "終了するには何かキーを押してください..." << std::endl;
         ::_getch();
-#else
-        std::getchar();
 #endif
     }
 }

@@ -513,7 +513,7 @@ namespace {
 
     void outputcsv(mymap const & distmap, std::int32_t n)
     {
-        std::ofstream ofs((boost::format("distribution_%d個目.csv") % (n + 1)).str());
+        std::ofstream ofs((boost::format("result/distribution_%d個目.csv") % (n + 1)).str());
 
         boost::transform(
             distmap,
@@ -521,3 +521,4 @@ namespace {
             [](auto const & p) { return (boost::format("%d,%d") % p.first % p.second).str(); });
     }
 }
+
