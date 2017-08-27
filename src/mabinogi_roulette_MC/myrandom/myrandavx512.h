@@ -21,12 +21,25 @@
 #include <boost/range/algorithm.hpp>    // for boost::generate
 
 namespace myrandom {
-    void distribution_deleter(svrng_new_uniform_distribution_int * pdistribution)
-    {
+   	//! A lambda expression.
+	/*!
+		svrng_distribution_tへのポインタを開放するラムダ式
+        \param pdistribution svrng_distribution_tへのポインタ
+	*/
+    static auto const distribution_deleter = [](auto pdistribution) {
         svrng_delete_distribution(pdistribution);
-    }
+    };
 
-	//! A class.
+   	//! A lambda expression.
+	/*!
+		svrng_engine_tへのポインタを開放するラムダ式
+        \param pengine svrng_engine_tへのポインタ
+	*/
+    static auto const svrng_engine_deleter = [](auto pengine) {
+        svrng_delete_engine(pengine);
+    };
+    
+    //! A class.
 	/*!
 		自作乱数クラス
 	*/
@@ -57,14 +70,14 @@ namespace myrandom {
 			[min, max]の閉区間で一様乱数を生成する
 		*/
 		std::int32_t myrand()
-		{
+        {
 			if (!cnt_) {
-				_mm512_store_si512(rnd_.data(), svrng_generate16_int(randengine_, distribution_));
-				return rnd_[cnt_++];
+                _mm512_store_si512(rnd_.data(), svrng_generate16_int(*prandengine_, *pdistribution_));			
+                return rnd_[cnt_++];
 			}
 			else if (cnt_ == AVXREGBYTE) {
 				cnt_ = 0;
-				_mm512_store_si512(rnd_.data(), svrng_generate16_int(randengine_, distribution_));
+				_mm512_store_si512(rnd_.data(), svrng_generate16_int(*prandengine_, *pdistribution_));
 				return rnd_[cnt_++];
 			}
 			else {
@@ -93,13 +106,13 @@ namespace myrandom {
 		/*!
 			乱数の分布へのスマートポインタ
 		*/
-        std::unique_ptr<svrng_distribution_t> pdistribution_;
+        std::unique_ptr<svrng_distribution_t, decltype(distribution_deleter)> pdistribution_;
 		
 		//! A private member variable.
 		/*!
 			乱数エンジンへのスマートポインタ
 		*/
-        std::unique_ptr<svrng_engine_t> prandengine_;
+        std::unique_ptr<svrng_engine_t, decltype(svrng_engine_deleter)> prandengine_;
 
 		//! A private member variable.
 		/*!
@@ -133,12 +146,12 @@ namespace myrandom {
 	};
 
 	MyRandAvx512::MyRandAvx512(std::int32_t min, std::int32_t max)
+        : pdistribution_(new svrng_distribution_t(svrng_new_uniform_distribution_int(min, max + 1)), distribution_deleter),
+          prandengine_(nullptr, svrng_engine_deleter)
 	{
         
-
-		pdistribution_(new svrng_new_uniform_distribution_int(min, max + 1))
-
-		// ランダムデバイス
+        printf("OK");
+        // ランダムデバイス
 		std::random_device rnd;
 
 		// 初期化用ベクタ
@@ -148,8 +161,8 @@ namespace myrandom {
 		// 非決定的な乱数でシード列を構築する
 		boost::generate(v, std::ref(rnd));
         
-		// 乱数エンジン
-		randengine_ = svrng_new_mt19937_engine(v[0]);
+        // 乱数エンジン
+		prandengine_.reset(new svrng_engine_t(svrng_new_mt19937_engine(v[0])));
 	}
 }
 
