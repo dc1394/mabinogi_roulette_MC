@@ -13,6 +13,7 @@
 #include <array>						// for std::array
 #include <cstdint>                      // for std::int32_t, std::uint_least32_t
 #include <functional>                   // for std::ref
+#include <memory>                       // for std::unique_ptr
 #include <random>						// for std::random_device
 #include <vector>                       // for std::vector
 #include <immintrin.h>					// for _mm512_store_si512
@@ -20,6 +21,11 @@
 #include <boost/range/algorithm.hpp>    // for boost::generate
 
 namespace myrandom {
+    void distribution_deleter(svrng_new_uniform_distribution_int * pdistribution)
+    {
+        svrng_delete_distribution(pdistribution);
+    }
+
 	//! A class.
 	/*!
 		自作乱数クラス
@@ -85,15 +91,15 @@ namespace myrandom {
 
 		//! A private member variable.
 		/*!
-			乱数の分布
+			乱数の分布へのスマートポインタ
 		*/
-		svrng_distribution_t distribution_;
+        std::unique_ptr<svrng_distribution_t> pdistribution_;
 		
 		//! A private member variable.
 		/*!
-			乱数エンジン
+			乱数エンジンへのスマートポインタ
 		*/
-		svrng_engine_t randengine_;
+        std::unique_ptr<svrng_engine_t> prandengine_;
 
 		//! A private member variable.
 		/*!
@@ -126,9 +132,12 @@ namespace myrandom {
 		// #endregion 禁止されたコンストラクタ・メンバ関数
 	};
 
-	MyRandAvx512::MyRandAvx512(std::int32_t min, std::int32_t max) :
-		distribution_(svrng_new_uniform_distribution_int(min, max + 1))
+	MyRandAvx512::MyRandAvx512(std::int32_t min, std::int32_t max)
 	{
+        
+
+		pdistribution_(new svrng_new_uniform_distribution_int(min, max + 1))
+
 		// ランダムデバイス
 		std::random_device rnd;
 
