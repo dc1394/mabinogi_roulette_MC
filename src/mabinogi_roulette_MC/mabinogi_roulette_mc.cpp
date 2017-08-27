@@ -176,7 +176,7 @@ int main()
 
     cp.checkpoint("並列化無効", __LINE__);
 #endif      
-
+	
     // TBBで並列化したモンテカルロ・シミュレーションの結果を代入
     auto const mcresult2(montecarloTBB());
 

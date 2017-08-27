@@ -27,7 +27,7 @@ namespace myrandom {
         \param pdistribution svrng_distribution_tへのポインタ
 	*/
     static auto const distribution_deleter = [](auto pdistribution) {
-        svrng_delete_distribution(pdistribution);
+        svrng_delete_distribution(*pdistribution);
     };
 
    	//! A lambda expression.
@@ -36,7 +36,7 @@ namespace myrandom {
         \param pengine svrng_engine_tへのポインタ
 	*/
     static auto const svrng_engine_deleter = [](auto pengine) {
-        svrng_delete_engine(pengine);
+		svrng_delete_engine(*pengine);
     };
     
     //! A class.
@@ -147,10 +147,8 @@ namespace myrandom {
 
 	MyRandAvx512::MyRandAvx512(std::int32_t min, std::int32_t max)
         : pdistribution_(new svrng_distribution_t(svrng_new_uniform_distribution_int(min, max + 1)), distribution_deleter),
-          prandengine_(nullptr, svrng_engine_deleter)
+		  prandengine_(nullptr, svrng_engine_deleter)
 	{
-        
-        printf("OK");
         // ランダムデバイス
 		std::random_device rnd;
 
