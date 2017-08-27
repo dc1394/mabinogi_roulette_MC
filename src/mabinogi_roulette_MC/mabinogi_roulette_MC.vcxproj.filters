@@ -27,7 +27,7 @@
     <ClCompile Include="mabinogi_roulette_mc.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="goexit.cpp">
+    <ClCompile Include="goexit\goexit.cpp">
       <Filter>ソース ファイル\goexit</Filter>
     </ClCompile>
   </ItemGroup>

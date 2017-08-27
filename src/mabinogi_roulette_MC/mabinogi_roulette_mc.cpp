@@ -186,28 +186,24 @@ int main()
     std::tie(trialavg, fillavg) = eval_average(mcresult2);
 
     for (auto n = 0U; n < ROWCOLUMN; n++) {
-        auto const efficiency = trialavg[n] / static_cast<double>(n + 1);
-        std::cout
-            << boost::format("%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
-            % (n + 1) % trialavg[n] % efficiency
-            << boost::format("埋まっているマスの平均個数：%.1f個\n")
-            % fillavg[n];
-    }
-
-	for (auto n = 0U; n < ROWCOLUMN; n++) {
 		std::int32_t mode;
 		std::map<std::int32_t, std::int32_t> distmap;
 		std::tie(mode, distmap) = eval_mode(mcresult2, n);
 
 		outputcsv(distmap, n);
 
-		std::cout <<
-			boost::format("%d個目に必要な中央値：%d回, 最頻値：%d回, 標準偏差：%.1f")
-			% (n + 1)
-			% eval_median(mcresult2, n)
-			% mode
-			% eval_std_deviation(trialavg[n], mcresult2, n) << std::endl;
-	}
+        std::cout 
+			<< boost::format("%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
+			   % (n + 1)
+			   % trialavg[n]
+			   % (trialavg[n] / static_cast<double>(n + 1))
+			<< boost::format("中央値：%d回, 最頻値：%d回, 標準偏差：%.1f, ")
+			   % eval_median(mcresult2, n)
+			   % mode
+			   % eval_std_deviation(trialavg[n], mcresult2, n)
+			<< boost::format("埋まっているマスの平均個数：%.1f個\n")
+			   % fillavg[n];
+    }
 
     cp.checkpoint("それ以外の処理", __LINE__);
 
