@@ -19,13 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\SFMT-src-1.5.1\SFMT.c" />
     <ClCompile Include="goexit\goexit.cpp" />
     <ClCompile Include="mabinogi_roulette_mc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\SFMT-src-1.5.1\SFMT.h" />
     <ClInclude Include="goexit\goexit.h" />
     <ClInclude Include="myrandom\myrand.h" />
-    <ClInclude Include="myrandom\myrandavx512.h" />
+    <ClInclude Include="myrandom\myrandsfmt.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D316E3C4-3646-401A-AB28-9A00AD7886AB}</ProjectGuid>
@@ -36,26 +38,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>Intel C++ Compiler 17.0</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -118,9 +120,11 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Cpp0xSupport>true</Cpp0xSupport>
       <AdditionalIncludeDirectories>D:\DATA\PROGRAM\C++\mabinogi_roulette_MC\src\checkpoint;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CHECK_PARALELL_PERFORM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_SSE2=1;SFMT_MEXP=19937;_CHECK_PARALELL_PERFORM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <GenerateAlternateCodePaths>CORE512</GenerateAlternateCodePaths>
       <UseProcessorExtensions>CORE512</UseProcessorExtensions>
+      <Optimization>Full</Optimization>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -141,10 +145,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PreprocessorDefinitions>_CHECK_PARALELL_PERFORM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Optimization>MaxSpeedHighLevel</Optimization>
-      <GenerateAlternateCodePaths>CORE512</GenerateAlternateCodePaths>
-      <UseProcessorExtensions>CORE512</UseProcessorExtensions>
+      <PreprocessorDefinitions>HAVE_SSE2=1;SFMT_MEXP=19937;_CHECK_PARALELL_PERFORM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Full</Optimization>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

@@ -7,8 +7,8 @@
 
 #include "../checkpoint/checkpoint.h"
 #include "goexit/goexit.h"
-#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
-    #include "myrandom/myrandavx512.h"
+#ifdef HAVE_SSE2
+	#include "myrandom/myrandsfmt.h"
 #else
 	#include "myrandom/myrand.h"
 #endif
@@ -142,11 +142,8 @@ namespace {
         \param mr 自作乱数クラスのオブジェクト
         \return モンテカルロ法の結果が格納された可変長配列
     */
-#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
-    std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr);
-#else
-	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr);
-#endif
+	template <typename MyRandom>
+	std::vector<mypair2> montecarloImpl(MyRandom & mr);
 
     //! A function.
     /*!
@@ -351,13 +348,13 @@ namespace {
         // MCMAX個の容量を確保
         mcresult.reserve(MCMAX);
 
+#ifdef HAVE_SSE2
 		// 自作乱数クラスを初期化
-#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
-		myrandom::MyRandAvx512 mr(1, BOARDSIZE);
+		myrandom::MyRandSfmt mr(1, BOARDSIZE);
 #else
+		// 自作乱数クラスを初期化
 		myrandom::MyRand mr(1, BOARDSIZE);
 #endif
-
         // 試行回数分繰り返す
         for (auto n = 0U; n < MCMAX; n++) {
             // モンテカルロ・シミュレーションの結果を代入
@@ -369,11 +366,8 @@ namespace {
     }
 #endif
 
-#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
-    std::vector<mypair2> montecarloImpl(myrandom::MyRandAvx512 & mr)
-#else
-	std::vector<mypair2> montecarloImpl(myrandom::MyRand & mr)
-#endif
+	template <typename MyRandom>
+	std::vector<mypair2> montecarloImpl(MyRandom & mr)
     {
         // ビンゴボードを生成
         auto board(makeboard());
@@ -489,12 +483,15 @@ namespace {
             1U,
             [&mcresult](auto) {
 #endif
-            // 自作乱数クラスを初期化
-#if defined(__INTEL_COMPILER) && defined(__AVX512F__)
-			myrandom::MyRandAvx512 mr(1, BOARDSIZE);
+
+#ifdef HAVE_SSE2
+			// 自作乱数クラスを初期化
+			myrandom::MyRandSfmt mr(1, BOARDSIZE);
 #else
+			// 自作乱数クラスを初期化
 			myrandom::MyRand mr(1, BOARDSIZE);
 #endif
+
             // モンテカルロ・シミュレーションの結果を代入
             mcresult.push_back(montecarloImpl(mr));
 #ifdef __INTEL_COMPILER
