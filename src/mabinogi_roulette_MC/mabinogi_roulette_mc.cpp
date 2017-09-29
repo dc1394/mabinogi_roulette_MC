@@ -280,7 +280,7 @@ namespace {
 		boost::sort(medtmp);
 
 		// 中央値を求める
-		if (MCMAX % 2) {
+		if constexpr (MCMAX % 2) {
 			// 要素が奇数個なら中央の要素を返す
 			return medtmp[(MCMAX - 1) / 2];
 		}
