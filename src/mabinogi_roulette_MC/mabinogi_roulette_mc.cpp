@@ -180,8 +180,8 @@ int main()
 
     cp.checkpoint("並列化有効", __LINE__);
 
-    std::valarray<double> trialavg, fillavg;
-    std::tie(trialavg, fillavg) = eval_average(mcresult2.first, ROWCOLUMN);
+    //std::valarray<double> trialavg, fillavg;
+    auto const [trialavg, fillavg] = eval_average(mcresult2.first, ROWCOLUMN);
 
     for (auto n = 0U; n < ROWCOLUMN; n++) {
 		std::int32_t mode;
@@ -203,8 +203,8 @@ int main()
 			   % fillavg[n];
     }
 
-	std::valarray<double> trialavg2, fillavg2;
-	std::tie(trialavg2, fillavg2) = eval_average(mcresult2.second, BOARDSIZE);
+	//std::valarray<double> trialavg2, fillavg2;
+	auto const [trialavg2, fillavg2] = eval_average(mcresult2.second, BOARDSIZE);
 
 	for (auto n = 0U; n < BOARDSIZE; n++) {
 		std::int32_t mode;
