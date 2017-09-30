@@ -20,7 +20,6 @@
 #include <iterator>                             // for std::begin, std::ostream_iterator
 #include <map>                                  // for std::map
 #include <random>                               // for std::mt19937
-#include <tuple>                                // for std::tie
 #include <unordered_map>                        // for std::unordered_map
 #include <utility>                              // for std::make_pair, std::move
 #include <vector>                               // for std::vector
@@ -180,13 +179,10 @@ int main()
 
     cp.checkpoint("並列化有効", __LINE__);
 
-    //std::valarray<double> trialavg, fillavg;
     auto const [trialavg, fillavg] = eval_average(mcresult2.first, ROWCOLUMN);
 
     for (auto n = 0U; n < ROWCOLUMN; n++) {
-		std::int32_t mode;
-		std::map<std::int32_t, std::int32_t> distmap;
-		std::tie(mode, distmap) = eval_mode(mcresult2.first, n);
+		auto const [mode, distmap] = eval_mode(mcresult2.first, n);
 
 		outputcsv(distmap, (boost::format("result/distribution_%d個目.csv") % (n + 1)).str());
 
@@ -203,13 +199,10 @@ int main()
 			   % fillavg[n];
     }
 
-	//std::valarray<double> trialavg2, fillavg2;
 	auto const [trialavg2, fillavg2] = eval_average(mcresult2.second, BOARDSIZE);
 
 	for (auto n = 0U; n < BOARDSIZE; n++) {
-		std::int32_t mode;
-		std::map<std::int32_t, std::int32_t> distmap;
-		std::tie(mode, distmap) = eval_mode(mcresult2.second, n);
+		auto const [mode, distmap] = eval_mode(mcresult2.second, n);
 
 		outputcsv(distmap, (boost::format("result/distribution2_%d個目.csv") % (n + 1)).str());
 

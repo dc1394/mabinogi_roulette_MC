@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\SFMT-src-1.5.1\SFMT.c" />
     <ClCompile Include="goexit\goexit.cpp" />
     <ClCompile Include="mabinogi_roulette_mc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\SFMT-src-1.5.1\SFMT.h" />
     <ClInclude Include="goexit\goexit.h" />
     <ClInclude Include="myrandom\myrand.h" />
     <ClInclude Include="myrandom\myrandsfmt.h" />

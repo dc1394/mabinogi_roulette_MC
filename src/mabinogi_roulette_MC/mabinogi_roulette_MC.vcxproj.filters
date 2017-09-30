@@ -22,6 +22,12 @@
     <Filter Include="ヘッダー ファイル\myrandom">
       <UniqueIdentifier>{27678034-db97-4138-abad-b96afc2f8a21}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\SFMT">
+      <UniqueIdentifier>{de68e7c2-540a-4197-a3df-b35ecd154ead}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\SFMT">
+      <UniqueIdentifier>{ac4041d0-6102-4018-a210-fa395bc18104}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mabinogi_roulette_mc.cpp">
@@ -29,6 +35,9 @@
     </ClCompile>
     <ClCompile Include="goexit\goexit.cpp">
       <Filter>ソース ファイル\goexit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SFMT-src-1.5.1\SFMT.c">
+      <Filter>ソース ファイル\SFMT</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +49,9 @@
     </ClInclude>
     <ClInclude Include="myrandom\myrandsfmt.h">
       <Filter>ヘッダー ファイル\myrandom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SFMT-src-1.5.1\SFMT.h">
+      <Filter>ヘッダー ファイル\SFMT</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
