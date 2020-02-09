@@ -28,24 +28,20 @@
 #include <boost/format.hpp>                     // for boost::format
 #include <boost/range/algorithm.hpp>            // for boost::find, boost::max_element, boost::transform
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
-#ifdef __INTEL_COMPILER
-	#include <cilk/cilk.h>                      // for cilk_for
-#else
-    #include <tbb/parallel_for.h>               // for tbb::parallel_for
-#endif
+#include <tbb/parallel_for.h>                   // for tbb::parallel_for
 
 namespace {
     //! A global variable (constant expression).
     /*!
         列のサイズ
     */
-    static auto constexpr COLUMN = 5U;
+    static auto constexpr COLUMN = 5ULL;
 
     //! A global variable (constant expression).
     /*!
         行のサイズ
     */
-    static auto constexpr ROW = 5U;
+    static auto constexpr ROW = 5ULL;
 
     //! A global variable (constant expression).
     /*!
@@ -87,7 +83,7 @@ namespace {
 	/*!
 		(n + 1)個目の行・列またはマスが埋まったときの平均試行回数、埋まっているマスまたは行・列の平均個数を求める
 		\param mcresult モンテカルロ・シミュレーションの結果が格納された二次元可変長配列
-		\param 行・列またはマスの総数
+		\param size 行・列またはマスの総数
 		\return (n + 1)個目の行・列が埋まったときの平均試行回数、埋まっているマスの平均個数が格納された可変長配列のstd::pair
 	*/
 	std::pair< std::valarray<double>, std::valarray<double> > eval_average(tbb::concurrent_vector< std::vector<mypair2> > const & mcresult, std::size_t size);
@@ -376,9 +372,9 @@ namespace {
         // 試行回数分繰り返す
         for (auto n = 0U; n < MCMAX; n++) {
 			// モンテカルロ・シミュレーションの結果を代入
-			auto const res = montecarloImpl(mr);
-			mcresult.first.push_back(res.first);
-			mcresult.second.push_back(res.second);
+			auto const [resf, ress] = montecarloImpl(mr);
+			mcresult.first.emplace_back(resf);
+			mcresult.second.emplace_back(ress);
         }
 
         // モンテカルロ・シミュレーションの結果を返す
@@ -453,7 +449,7 @@ namespace {
                     rcfill[j] = true;
 
                     // 要した試行回数と、その時点で埋まったマスの数を格納
-                    fillnum.push_back(std::make_pair(n, sum(board)));
+                    fillnum.emplace_back(n, sum(board));
                 }
 
                 // 各列が埋まったかどうかのフラグ
@@ -473,12 +469,12 @@ namespace {
                     rcfill[j + ROW] = true;
 
                     // 要した試行回数と、その時点で埋まったマスの数を格納
-                    fillnum.push_back(std::make_pair(n, sum(board)));
+                    fillnum.emplace_back(n, sum(board));
                 }
             }
 
 			// 要した試行回数と、その時点で埋まっている行・列の数を格納
-			fillnum2.push_back(std::make_pair(n, static_cast<std::int32_t>(fillnum.size())));
+			fillnum2.emplace_back(n, static_cast<std::int32_t>(fillnum.size()));
 
             // 全ての行・列が埋まったかどうか
             if (fillnum.size() == ROWCOLUMN) {
@@ -502,15 +498,11 @@ namespace {
 		mcresult.second.reserve(MCMAX);
 
         // MCMAX回のループを並列化して実行
-#ifdef __INTEL_COMPILER
-        cilk_for (auto n = 0U; n < MCMAX; n++) {
-#else
         tbb::parallel_for(
             0U,
             MCMAX,
             1U,
             [&mcresult](auto) {
-#endif
 
 #ifdef HAVE_SSE2
 			// 自作乱数クラスを初期化
@@ -521,14 +513,10 @@ namespace {
 #endif
 
             // モンテカルロ・シミュレーションの結果を代入
-			auto const res = montecarloImpl(mr);
-            mcresult.first.push_back(res.first);
-			mcresult.second.push_back(res.second);
-#ifdef __INTEL_COMPILER
-            }
-#else
+			auto const [resf, ress] = montecarloImpl(mr);
+            mcresult.first.emplace_back(resf);
+			mcresult.second.emplace_back(ress);
         });
-#endif
 
         // モンテカルロ・シミュレーションの結果を返す
         return mcresult;

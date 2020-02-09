@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <cstdint>  // for std::int32_t, std::uint_least32_t
+#include <cstdint>  // for std::int32_t
 #include <random>   // for std::mt19937, std::random_device
 
 namespace myrandom {
@@ -77,20 +77,22 @@ namespace myrandom {
         //! A private copy constructor (deleted).
         /*!
             コピーコンストラクタ（禁止）
+            \param dummy コピー元のオブジェクト（未使用）
         */
-        MyRand(const MyRand &) = delete;
+        MyRand(MyRand const & dummy) = delete;
 
         //! A private member function (deleted).
         /*!
             operator=()の宣言（禁止）
+            \param dummy コピー元のオブジェクト（未使用）
             \return コピー元のオブジェクト
         */
-        MyRand & operator=(const MyRand &) = delete;
+        MyRand & operator=(MyRand const & dummy) = delete;
 
         // #endregion 禁止されたコンストラクタ・メンバ関数
     };
 
-    MyRand::MyRand(std::int32_t min, std::int32_t max) :
+    inline MyRand::MyRand(std::int32_t min, std::int32_t max) :
         distribution_(min, max)
     {
         // ランダムデバイス
