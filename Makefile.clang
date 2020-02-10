@@ -6,9 +6,9 @@ DEPS = checkpoint.d goexit.d mabinogi_roulette_mc.d SFMT.d
 
 VPATH  = src/checkpoint src/mabinogi_roulette_MC src/mabinogi_roulette_MC/myrandom \
 		 src/mabinogi_roulette_MC/goexit src/SFMT-src-1.5.1
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -O3 -mtune=native -march=native -pipe 
-CXX = g++
+CXX = clang++
 CXXFLAGS = -Wall -Wextra -O3 -mtune=native -march=native -pipe -std=c++17
 LDFLAGS = -ltbb
 
