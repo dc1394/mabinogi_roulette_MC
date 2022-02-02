@@ -47,7 +47,7 @@ namespace myrandom {
         */
         std::int32_t myrand()
         {
-			return static_cast<std::int32_t>(sfmt_genrand_uint32(&sfmt) % (max_ - min_ + 1)) + min_;
+			return static_cast<std::int32_t>(sfmt_genrand_uint32(&sfmt_) % (max_ - min_ + 1)) + min_;
         }
 
         // #endregion メンバ関数
@@ -71,7 +71,7 @@ namespace myrandom {
         /*!
             乱数エンジン
         */
-		sfmt_t sfmt;
+		sfmt_t sfmt_;
 
         // #region 禁止されたコンストラクタ・メンバ関数
 
@@ -107,7 +107,7 @@ namespace myrandom {
         std::random_device rnd;
 
         // 乱数エンジン
-		sfmt_init_gen_rand(&sfmt, rnd());
+		sfmt_init_gen_rand(&sfmt_, rnd());
     }
 }
 
