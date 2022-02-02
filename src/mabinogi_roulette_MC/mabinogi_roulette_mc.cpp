@@ -15,6 +15,9 @@
 #include <algorithm>                            // for std::shuffle
 #include <cstdint>                              // for std::int32_t
 #include <cmath>                                // for std::sqrt
+#ifdef _MSC_VER
+	#include <format>                           // for std::format
+#endif
 #include <fstream>                              // for std::ofstream
 #include <iostream>                             // for std::cout
 #include <iterator>                             // for std::begin, std::ostream_iterator
@@ -25,7 +28,9 @@
 #include <vector>                               // for std::vector
 #include <valarray>                             // for std::valarray
 #include <boost/algorithm/cxx11/iota.hpp>       // for boost::algorithm::iota
-#include <boost/format.hpp>                     // for boost::format
+#ifndef _MSC_VER
+	#include <boost/format.hpp>                 // for boost::format
+#endif
 #include <boost/range/algorithm.hpp>            // for boost::find, boost::max_element, boost::transform
 #include <tbb/concurrent_vector.h>              // for tbb::concurrent_vector
 #include <tbb/parallel_for.h>                   // for tbb::parallel_for
@@ -179,27 +184,42 @@ int main()
 
     for (auto n = 0U; n < ROWCOLUMN; n++) {
 		auto const [mode, distmap] = eval_mode(mcresult2.first, n);
-
-		outputcsv(distmap, (boost::format("result/distribution_%d個目.csv") % (n + 1)).str());
+#ifdef _MSC_VER
+		outputcsv(distmap, std::format("result/distribution_{:d}個目.csv", n + 1));
 
         std::cout 
-			<< boost::format("ビンゴ%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
-			   % (n + 1)
-			   % trialavg[n]
-			   % (trialavg[n] / static_cast<double>(n + 1))
-			<< boost::format("中央値：%d回, 最頻値：%d回, 標準偏差：%.1f, ")
-			   % eval_median(mcresult2.first, n)
-			   % mode
-			   % eval_std_deviation(trialavg[n], mcresult2.first, n)
-			<< boost::format("埋まっているマスの平均個数：%.1f個\n")
-			   % fillavg[n];
+			<< std::format("ビンゴ{:d}個目に必要な平均試行回数：{:.1f}回, 効率：{:.1f}(回/個), ", n + 1, trialavg[n], trialavg[n] / static_cast<double>(n + 1))
+			<< std::format("中央値：{:d}回, 最頻値：{:d}回, 標準偏差：{:.1f}, ", eval_median(mcresult2.first, n), mode, eval_std_deviation(trialavg[n], mcresult2.first, n))
+			<< std::format("埋まっているマスの平均個数：{:.1f}個\n", fillavg[n]);
+#else
+        outputcsv(distmap, (boost::format("result/distribution_%d個目.csv") % (n + 1)).str());
+
+        std::cout
+            << boost::format("ビンゴ%d個目に必要な平均試行回数：%.1f回, 効率：%.1f(回/個), ")
+            % (n + 1)
+            % trialavg[n]
+            % (trialavg[n] / static_cast<double>(n + 1))
+            << boost::format("中央値：%d回, 最頻値：%d回, 標準偏差：%.1f, ")
+            % eval_median(mcresult2.first, n)
+            % mode
+            % eval_std_deviation(trialavg[n], mcresult2.first, n)
+            << boost::format("埋まっているマスの平均個数：%.1f個\n")
+            % fillavg[n];
+#endif
     }
 
 	auto const [trialavg2, fillavg2] = eval_average(mcresult2.second, BOARDSIZE);
 
 	for (auto n = 0U; n < BOARDSIZE; n++) {
 		auto const [mode, distmap] = eval_mode(mcresult2.second, n);
+#ifdef _MSC_VER
+        outputcsv(distmap, std::format("result/distribution2_{:d}個目.csv", n + 1));
 
+        std::cout
+            << std::format("{:d}個目のマスに必要な平均試行回数：{:.1f}回, 効率：{:.1f}(回/個), ", n + 1, trialavg2[n], trialavg2[n] / static_cast<double>(n + 1))
+            << std::format("中央値：{:d}回, 最頻値：{:d}回, 標準偏差：{:.1f}, ", eval_median(mcresult2.second, n), mode, eval_std_deviation(trialavg2[n], mcresult2.second, n))
+            << std::format("埋まっている行・列の平均個数：{:.1f}個\n", fillavg2[n]);
+#else
 		outputcsv(distmap, (boost::format("result/distribution2_%d個目.csv") % (n + 1)).str());
 
 		std::cout
@@ -213,6 +233,7 @@ int main()
 			% eval_std_deviation(trialavg2[n], mcresult2.second, n)
 			<< boost::format("埋まっている行・列の平均個数：%.1f個\n")
 			% fillavg2[n];
+#endif
 	}
 
     cp.checkpoint("それ以外の処理", __LINE__);
@@ -529,7 +550,11 @@ namespace {
         boost::transform(
             distmap,
             std::ostream_iterator<std::string>(ofs, "\n"),
+#ifdef _MSC_VER
+            [](auto const& p) { return std::format("{:d},{:d}", p.first, p.second); });
+#else
             [](auto const & p) { return (boost::format("%d,%d") % p.first % p.second).str(); });
+#endif
     }
 }
 
